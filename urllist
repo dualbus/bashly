@@ -1,0 +1,18 @@
+#!/bin/bash
+usage() { printf "usage: %s <url>\n" "${0##*/}"; }
+
+temp_dir=$(mktemp -d) || exit 1
+trap 'rm -rf "$temp_dir"' EXIT
+(cd "$temp_dir" || exit;
+if [[ "$1" ]]; then
+  if wget -O /dev/null "$1" >/dev/null 2>&1; then
+    echo 'info: starting retrieval'>&2
+    wget -r -nv -nd --delete-after "$1" 2>&1 | sed -n '/->/{/URL:/s/.*URL:\([^ ]*\).*/\1/;/^[ ]*$/d;p}'
+  else
+    echo "error: cannot connect to '$1'">&2
+  fi
+else
+  usage >&2
+  exit 1
+fi)
+
