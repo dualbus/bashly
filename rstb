@@ -129,8 +129,11 @@ rstb_post() {
     rstb_preview "$built_post" || die 'rstb_preview'
 
     # Publish it.
-    if read -rsN1 -p 'mail? [y/N] '; [[ $REPLY = [Yy] ]]; then
-        rstb_email "$built_post" || die 'rstb_email'
+    if ! [[ -e $built_post.email ]]; then
+        if read -rsN1 -p 'mail? [y/N] '; [[ $REPLY = [Yy] ]]; then
+            rstb_email "$built_post" || die 'rstb_email'
+            touch "$built_post".email;
+        fi
     fi
 }
 
