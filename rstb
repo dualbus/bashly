@@ -1,0 +1,235 @@
+#!/bin/bash
+
+rstb_extension=rst
+
+## Shell options.
+shopt -s nullglob;
+
+## General functions.
+
+# Warn & die are from Wooledge's Wiki.
+# http://mywiki.wooledge.org/BashFAQ/101
+warn() {
+    printf '%s\n' "$1" >&2
+}
+die () {
+    local st="$?"
+    warn "$1"
+    exit "$st"
+}
+
+preview() {
+    local file
+
+    file=$1
+
+    if ! [[ -r $file ]]; then
+        return 1;
+    fi
+
+    w3m "$file"
+}
+
+## rstb functions
+
+# Check if we have a similar named post and notify me. It should give me
+# the chance to select the post.
+rstb_similar() {
+    local name option PS3;
+    local -a similar;
+
+    name=$1
+
+    if ! [[ $name ]]; then
+        return 1;
+    fi
+
+    # Year/Month/Day/Name
+    similar=("$posts_directory"/*/*/*/*/*"$name"*."$rstb_extension")
+    if ! [[ ${similar[*]}  ]]; then
+        return 1;
+    fi
+
+    PS3='> ';
+    select option in "${similar[@]}"; do
+        break;
+    done
+
+    if ! [[ $option ]]; then
+        return 1;
+    fi
+
+    printf '%s\0' "$option"
+    return 0;
+}
+
+rstb_edit() {
+    local post;
+
+    post=$1;
+
+    if ! [[ $post ]]; then
+        return 1;
+    fi
+
+    "${EDITOR:-vim}" "$post";
+}
+
+rstb_post() {
+    local name post base built_post last_post date PS3;
+    local -a posts;
+
+    name=$1;
+    date=$(date +%Y/%m/%d);
+
+    # Sanity checks.
+
+    if ! [[ $name ]]; then
+        die 'Please provide $name'
+    fi
+
+    # Make the base directory.
+
+    base=$posts_directory/$date;
+    if ! mkdir -p "$base"; then 
+        return 1;
+    fi
+
+    if ! post=$(rstb_similar "$name"); then
+        # We didn't have luck or it's new. Lets assume it's the first post of the
+        # day.
+
+        die 'bababa';
+
+        post=1
+        posts=("$base"/*);
+
+        # Get the index of the last post.
+        if ((0 < ${#posts[@]})); then
+            last_post=${posts[@]:(-1)};
+            last_post=${last_post##*/}
+            post=$((last_post+1))
+        fi
+
+        # Make the directory for the post & touch the file.
+        mkdir -p "$base/$post";
+        post=$base/$post/$name.$rstb_extension;
+        touch "$post";
+    fi
+
+    # Open it.
+    rstb_edit "$post" || die 'rstb_edit'
+
+    # Compile it.
+    rstb_build "$post" || die 'rstb_build'
+
+    built_post=${post%.*}.html
+
+    # Preview it.
+    rstb_preview "$built_post" || die 'rstb_preview'
+
+    # Publish it.
+    if read -rsN1 -p 'mail? [y/N] '; [[ $REPLY = [Yy] ]]; then
+        rstb_email "$built_post" || die 'rstb_email'
+    fi
+}
+
+rstb_build() {
+    local file
+
+    file=$1
+
+    if ! [[ $file && -r $file ]]; then
+        die '$file'
+    fi
+
+    warn "building file \`$file'";
+    (
+        basename=${file##*/};
+        basename=${basename%.*};
+        cd "${file%/*}" || exit 1;
+        rst2html "$basename.$rstb_extension" > "$basename.html"
+    )
+}
+
+rstb_preview() {
+    local file
+
+    file=$1
+
+    if ! [[ $file && -r $file ]]; then
+        die 'rstb_preview $file'
+    fi
+
+    warn "previewing file \`$file'";
+    preview "$file"
+}
+
+rstb_email() {
+    local file
+
+    file=$1
+
+    if ! [[ $file && -r $file ]]; then
+        die 'rstb_email $file'
+    fi
+
+    warn "emailing file \`$file'";
+
+    EMAIL="$email_from" mutt -e "set content_type=text/html" "$email_to" -s 'subject' < "$file"
+}
+
+rstb_cmd() {
+    local file directory
+
+    file=$1
+    shift;
+
+    if file=$(rstb_similar "$file"); then
+        directory=${file%/*}
+    else
+        directory=$posts_directory
+    fi
+
+    builtin cd "$directory" || die 'abc';
+    "$@"
+}
+
+
+## Main code.
+
+functions=(
+    post
+    build
+    email
+    cmd 
+)
+
+function=$1;
+shift;
+
+configuration_files=(
+    '/etc/rstb'
+    '/usr/local/etc/rstb'
+    ~/'.rstb'
+)
+
+for c in "${configuration_files[@]}"; do
+    if [[ -r $c ]]; then
+        . "$c"
+    fi
+done
+
+function_exists=
+for f in "${functions[@]}"; do
+    if [[ $f = $function ]]; then
+        function_exists=1
+        break;
+    fi
+done
+
+if [[ $function_exists ]]; then
+    rstb_"$function" "$@";
+else
+    die 'Foo';
+fi
