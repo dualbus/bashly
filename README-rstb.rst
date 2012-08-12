@@ -9,6 +9,8 @@ NAME
 SYNOPSYS
 --------
 
+::
+
     rstb new <name>
     rstb edit <file>
     rstb build <file>
