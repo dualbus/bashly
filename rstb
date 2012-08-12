@@ -169,12 +169,15 @@ configuration_files=(
     /usr/local/etc/rstbrc
     ~/.rstbrc
 )
-
 for configuration_file in "${configuration_files[@]}"; do
     if [[ -r $configuration_file ]]; then
         . "$configuration_file"
     fi
 done
+
+[[ -d $posts_directory && -w $posts_directory ]] || {
+    die 'make sure $posts_directory is set and valid'
+}
 
 
 # Dependencies
