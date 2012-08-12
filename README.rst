@@ -12,6 +12,3 @@
 
 - urllist:
     Generate a list of URLs for a website. It crawls the website.
-
-- rstb:
-    Blogging system using reStructuredText, blogger, mutt, ...
