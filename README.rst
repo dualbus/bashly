@@ -1,17 +1,17 @@
-dpaste:
+- dpaste:
     Paste to dpaste.org. Mostly interesting because of the usage of /dev/tcp.
 
-dumbscript:
+- dumbscript:
     Start script(1) with a dumb terminal and a bash login shell.
     
-manout:
+- manout:
     Generate an outline of a manual.
 
-mylanip:
+- mylanip:
     Parse ifconfig.
 
-urllist:
+- urllist:
     Generate a list of URLs for a website. It crawls the website.
 
-rstb:
+- rstb:
     Blogging system using reStructuredText, blogger, mutt, ...
