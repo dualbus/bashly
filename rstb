@@ -1,187 +1,128 @@
 #!/bin/bash
 
-rstb_extension=rst
+# Rstb
+# ====
 
-## Shell options.
+# :description:
+#   A blog manager implemented in bash.
+
+# General settings
+# ----------------
+
+rstb_ext='rst';
+rstb_bext='html';
+rstb_datefmt='%Y/%m/%d';
+
+
+# Shell options
+# -------------
 shopt -s nullglob;
 
-## General functions.
 
-# Warn & die are from Wooledge's Wiki.
-# http://mywiki.wooledge.org/BashFAQ/101
-warn() {
-    printf '%s\n' "$1" >&2
+# General functions
+# -----------------
+
+warn()  { printf '%s: %s\n' "${BASH_SOURCE##*/}" "$1" >&2; }
+die()   { local st="$?"; warn "$1"; exit "$st"; }
+
+# Ins^H^H^HSane defaults
+# ----------------------
+
+# These should/must be overriden in the rstbrc file.
+editor()    { "${EDITOR:-vim}" "$1"; }
+viewer()    { w3m -T text/html "$1"; }
+builder()   { rst2html "$@"; }
+publisher() {
+    local file title;
+    local -a args;
+    file=$1;
+    title=$2;
+
+    args=( -e "set content_type=text/html" "$email_to" -s "$title" )
+    EMAIL="$email_from" mutt "${args[@]}" < "$file"
 }
-die () {
-    local st="$?"
-    warn "$1"
-    exit "$st"
-}
 
-preview() {
-    local file
 
-    file=$1
+# ------------------------------------------------------------ 
+#
+# Rstb functions
+# --------------
 
-    if ! [[ -r $file ]]; then
-        return 1;
-    fi
+rstb_checkfile()    {
+    local arg;
 
-    w3m "$file"
-}
-
-## rstb functions
-
-# Check if we have a similar named post and notify me. It should give me
-# the chance to select the post.
-rstb_similar() {
-    local name option PS3;
-    local -a similar;
-
-    name=$1
-
-    if ! [[ $name ]]; then
-        return 1;
-    fi
-
-    # Year/Month/Day/Name
-    similar=("$posts_directory"/*/*/*/*/*"$name"*."$rstb_extension")
-    if ! [[ ${similar[*]}  ]]; then
-        return 1;
-    fi
-
-    PS3='> ';
-    select option in "${similar[@]}"; do
-        break;
+    for arg; do
+        if ! [[ -r $arg ]]; then
+            die "unreadable file: $arg";
+        fi;
     done
-
-    if ! [[ $option ]]; then
-        return 1;
-    fi
-
-    printf '%s\0' "$option"
-    return 0;
 }
 
-rstb_edit() {
-    local post;
+rstb_title()        { rstb_checkfile "$1" && awk 'NR==1' "$1"; }
 
-    post=$1;
-
-    if ! [[ $post ]]; then
-        return 1;
-    fi
-
-    "${EDITOR:-vim}" "$post";
-}
-
-rstb_post() {
-    local name post base built_post last_post date PS3;
+rstb_new()          {
+    local title post base_directory last_post;
     local -a posts;
 
-    name=$1;
-    date=$(date +%Y/%m/%d);
+    title=$1;
 
     # Sanity checks.
-
-    if ! [[ $name ]]; then
-        die 'Please provide $name'
+    if ! [[ $title ]]; then
+        die 'Please provide $title'
     fi
 
     # Make the base directory.
-
-    base=$posts_directory/$date;
-    if ! mkdir -p "$base"; then 
-        return 1;
+    base_directory=$posts_directory/$(date "+$rstb_datefmt");
+    if ! mkdir -p "$base_directory"; then 
+        die 'mkdir -p $base_directory'
     fi
 
-    if ! post=$(rstb_similar "$name"); then
-        # We didn't have luck or it's new. Lets assume it's the first post of the
-        # day.
+    # Increase the counter.
+    posts=("$base_directory"/*);
+    last_post=${posts[@]:(-1)};
+    last_post=${last_post##*/}
+    post=$((last_post+1))
 
-        die 'bababa';
+    # Make the directory for the post & touch the file.
+    mkdir -p "$base_directory/$post";
+    post=$base_directory/$post/$title.$rstb_ext;
 
-        post=1
-        posts=("$base"/*);
-
-        # Get the index of the last post.
-        if ((0 < ${#posts[@]})); then
-            last_post=${posts[@]:(-1)};
-            last_post=${last_post##*/}
-            post=$((last_post+1))
-        fi
-
-        # Make the directory for the post & touch the file.
-        mkdir -p "$base/$post";
-        post=$base/$post/$name.$rstb_extension;
-        touch "$post";
-    fi
-
-    # Open it.
-    rstb_edit "$post" || die 'rstb_edit'
-
-    # Compile it.
-    rstb_build "$post" || die 'rstb_build'
-
-    built_post=${post%.*}.html
-
-    # Preview it.
-    rstb_preview "$built_post" || die 'rstb_preview'
-
-    # Publish it.
-    if ! [[ -e $built_post.email ]]; then
-        if read -rsN1 -p 'mail? [y/N] '; [[ $REPLY = [Yy] ]]; then
-            rstb_email "$built_post" || die 'rstb_email'
-            touch "$built_post".email;
-        fi
+    if ! rstb_edit "$post" || ! [[ -r $post ]]; then
+        rmdir "${post%/*}" "$base_directory" >/dev/null 2>&1
     fi
 }
 
-rstb_build() {
-    local file
+rstb_edit()         { editor "$1"; }
 
+rstb_build()        {
+    local file;
     file=$1
 
-    if ! [[ $file && -r $file ]]; then
-        die '$file'
+    if rstb_checkfile "$file"; then
+        builder "$file" > "${file%.*}.$rstb_bext"
     fi
-
-    warn "building file \`$file'";
-    (
-        basename=${file##*/};
-        basename=${basename%.*};
-        cd "${file%/*}" || exit 1;
-        rst2html "$basename.$rstb_extension" > "$basename.html"
-    )
 }
 
-rstb_preview() {
+rstb_view()         {
     local file
+    file=${1%.*}.$rstb_bext
 
-    file=$1
-
-    if ! [[ $file && -r $file ]]; then
-        die 'rstb_preview $file'
+    if rstb_checkfile "$file"; then
+        viewer "$file"
     fi
-
-    warn "previewing file \`$file'";
-    preview "$file"
 }
 
-rstb_email() {
-    local file
+rstb_publish()      {
+    local src file;
+    src=$1
+    file=${1%.*}.$rstb_bext
 
-    file=$1
-
-    if ! [[ $file && -r $file ]]; then
-        die 'rstb_email $file'
+    if rstb_checkfile "$src" "$file"; then
+        publisher "$file" "$(rstb_title "$src")";
     fi
-
-    warn "emailing file \`$file'";
-
-    EMAIL="$email_from" mutt -e "set content_type=text/html" "$email_to" -s 'subject' < "$file"
 }
 
+# FIXME
 rstb_cmd() {
     local file directory
 
@@ -199,40 +140,74 @@ rstb_cmd() {
 }
 
 
-## Main code.
+# ------------------------------------------------------------
+#
+# Main code
+# ---------
 
-functions=(
-    post
+# Available commands
+# ++++++++++++++++++
+
+commands=(
+    new
+    edit
     build
-    email
+    view
+    publish
     cmd 
 )
 
-function=$1;
+command=$1;
 shift;
 
+
+# Configuration
+# +++++++++++++
+
 configuration_files=(
-    '/etc/rstb'
-    '/usr/local/etc/rstb'
-    ~/'.rstb'
+    /etc/rstbrc
+    /usr/local/etc/rstbrc
+    ~/.rstbrc
 )
 
-for c in "${configuration_files[@]}"; do
-    if [[ -r $c ]]; then
-        . "$c"
+for configuration_file in "${configuration_files[@]}"; do
+    if [[ -r $configuration_file ]]; then
+        . "$configuration_file"
     fi
 done
 
-function_exists=
-for f in "${functions[@]}"; do
-    if [[ $f = $function ]]; then
-        function_exists=1
+
+# Dependencies
+# ++++++++++++
+
+declare -a dependencies=(
+    'date'          # Coreutils
+    'rst2html'      # Docutils
+    'touch'
+    'mkdir'
+    'rmdir'
+)
+for dependency in "${dependencies[@]}"; do
+    if ! type "$dependency" >/dev/null 2>&1; then
+        die "missing dependency: $dependency";
+    fi
+done
+
+
+# Execution of command
+# ++++++++++++++++++++
+
+# Fail if the command doesn't exist
+command_exists=
+for have_command in "${commands[@]}"; do
+    if [[ $have_command = "$command" ]]; then
+        command_exists=1
         break;
     fi
 done
 
-if [[ $function_exists ]]; then
-    rstb_"$function" "$@";
+if [[ $command_exists ]]; then
+    rstb_"$command" "$@";
 else
     die 'Foo';
 fi
