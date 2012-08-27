@@ -1,0 +1,109 @@
+#!/usr/bin/awk -f
+function p(d)
+{
+    if(d ~ /^<!/) {
+    } else
+    if(d ~ /^<[?]/) {
+        gsub(/^<|?[[:space:]]*$/, "", d);
+        print d;
+    } else
+    if(d ~ /^<\//) {
+        sub(/^<\//, "", d);
+        print ")" d
+    } else
+    if(d ~ /^</) {
+        sub(/^</, "", d);
+        print "(" d
+    } else
+    if(d ~ /^A/) {
+        sub(/="/, " ", d);
+        sub(/"[[:space:]]*$/, "", d);
+        print d;
+    } else
+    if(d ~ /^-/) {
+        sub(/^-[[:space:]]*/, "", d);
+        print "-" d;
+    } else {
+        print d;
+    }
+}
+
+# C:0
+# T:1
+# D:2
+# S:3
+{
+    n = length;
+    for(i = 1; i <= n + 1; i++) {
+        c = substr($0, i, 1);
+        if(0 == s) {
+            if("<" == c) {
+                s = 1;
+                p("-"(t==""?"\\n":t));
+                t = c;
+            } else {
+                if("" == c) {
+                    if("" != t"")
+                        p("-"t);
+                    t = "";
+                } else {
+                    t = t c;
+                }
+            }
+        } else
+        if(1 == s) {
+            if("<" == c) {
+                print "RAWR" > "/dev/stderr"; exit
+            } else
+            if("/" == c) {
+                if(">" == substr($0, i+1, 1)) {
+                    i++;
+                    p(t);
+                    p("</"substr(pt,2));
+                    t = "";
+                    s = 0;
+                } else {
+                    t = t c;
+                }
+            } else
+            if(">" == c) {
+                p(t);
+                pt = t;
+                t = "";
+                s = 0;
+            } else
+            if(c ~ /[[:space:]]/ || "" == c) {
+                if(t ~ /^<[!?]/) {
+                    t = t c;
+                } else {
+                    p(t);
+                    if(t ~ /^</)
+                        pt = t;
+                    t = "A";
+                }
+            } else
+            if("\"" == c) {
+                s = 2;
+                t = t c;
+            } else
+            if("'" == c) {
+                s = 3;
+                t = t c;
+            } else {
+                t = t c;
+            }
+        } else
+        if(2 == s) {
+            if("\"" == c) {
+                s = 1;
+            }
+            t = t c;
+        } else
+        if(3 == s) {
+            if("'" == c) {
+                s = 1;
+            }
+            t = t c;
+        }
+    }
+}
