@@ -1,0 +1,162 @@
+#!/bin/bash
+
+chr() { printf \\$(($1/64*100+$1%64/8*10+$1%8)); } 
+ord() { LC_CTYPE=C printf '%d' "'$1"; }
+
+# RFC3986
+penc() {
+    declare c i block
+    while IFS= read -r block; do
+        for ((i=0; i<${#block}; i++)); do
+            c=${block:i:1}
+            if [[ $c = [[:alpha:].~-] ]]; then
+                printf %s "$c"
+            else
+                printf %%%02X "$(ord "$c")"
+            fi
+        done
+        printf %%0a
+    done
+    for ((i=0; i<${#block}; i++)); do
+        c=${block:i:1}
+        if [[ $c = [[:alpha:].~-] ]]; then
+            printf %s "$c"
+        else
+            printf %%%02X "$(ord "$c")"
+        fi
+    done
+}
+
+# application/x-www-form-urlencoded
+fuenc() {
+    declare c i block
+    while IFS= read -r block; do
+        for ((i=0; i<${#block}; i++)); do
+            c=${block:i:1}
+            if [[ $c = [[:alpha:].~-] ]]; then
+                printf %s "$c"
+            elif [[ $c = ' ' ]]; then
+                printf +
+            else
+                printf %%%02X "$(ord "$c")"
+            fi
+        done
+        printf %%0a
+    done
+    for ((i=0; i<${#block}; i++)); do
+        c=${block:i:1}
+        if [[ $c = [[:alpha:].~-] ]]; then
+            printf %s "$c"
+        elif [[ $c = ' ' ]]; then
+            printf +
+        else
+            printf %%%02X "$(ord "$c")"
+        fi
+    done
+}
+
+pdec() {
+    declare data=${1//\\/\\\\}
+    printf "${data//\%/\\x}"
+}
+
+fudec() {
+    declare data=${1//'+'/'%20'}
+    pdec "$data"
+}
+
+# Convert to a QS an associative array of arguments previously percent-encoded.
+# The arguments are expected to be in this order:
+#   k0 k1 k2 ... kn v0 v1 v2 ... vn
+# where 'ki' is the key corresponding to the 'vi' value.
+url_encode() {
+    declare offset=$(($#/2))
+    declare i key value sep
+    sep=
+    for ((i=1;i<=offset;i++)); do
+        printf %s%s=%s "$sep" "${@:i:1}" "${@:i+offset:1}"
+        sep='&'
+    done
+}
+
+# Parses a simple URL into its components.
+# It returns a space separated list of the retrieved elements; in case an
+# element is missing, a '?' will be used as a place-holder.
+url_parse() {
+    local url=$1 x y
+    local scheme userpwd username password
+    local netloc fqdn port path qs frag
+    local -a parts
+    IFS=':' read -r scheme x <<< "$url"
+    if [[ $x != '//'* ]]; then
+        scheme=
+        x=//$url
+    fi
+    x=${x#//}
+    IFS=@ read -r userpwd x <<< "$x"
+    if [[ ! $x ]]; then
+        x=$userpwd userpwd=
+    fi
+    IFS=':' read -r username password <<< "$userpwd"
+    IFS='/' read -r netloc x <<< "$x"
+    IFS=':?' read -r fqdn port y <<< "$netloc"
+    if [[ $y ]]; then
+        x=?$y
+    fi
+    port=${port:-80}
+    IFS='?' read -r path x <<< "$x"
+    path=/$path
+    IFS='#' read -r qs frag <<< "$x"
+    parts=( "$scheme" "$username" "$password"
+            "$fqdn" "$port" "$path" "$qs" "$frag")
+    (IFS=':'; printf '%s\n' "${parts[*]}")
+}
+
+http_get() {
+    declare url=$1 fqdn port path qs frag res
+    declare -a req=()
+    IFS=: read -r _ _ _ fqdn port path qs frag < <(url_parse "$url")
+    res=$path
+    [[ $qs ]] && res+=?$qs
+    [[ $frag ]] && res+=#$frag
+    req+=("GET $res HTTP/1.0")
+    req+=("Host: $fqdn")
+    req+=('')
+    { exec 3<>"/dev/tcp/$fqdn/$port"; } 2>/dev/null || die 'Connection refused'
+    printf '%s\r\n' "${req[@]}" >&3
+    while IFS= read -r line; do printf '%s\n' "$line"; done <&3
+    exec 3>&-
+}
+
+http_post() {
+    declare url=$1 form=$2 fqdn port path qs frag res
+    declare -a req=()
+    IFS=: read -r _ _ _ fqdn port path qs frag < <(url_parse "$url")
+    res=$path
+    [[ $qs ]] && res+=?$qs
+    [[ $frag ]] && res+=#$frag
+    req+=("POST $res HTTP/1.0")
+    req+=("Host: $fqdn")
+    req+=("Content-Type: application/x-www-form-urlencoded")
+    req+=("Content-Length: $((${#form}+2))") # form + \r\n
+    req+=('')
+    req+=("$form")
+    { exec 3<>"/dev/tcp/$fqdn/$port"; } 2>/dev/null || die 'Connection refused'
+    printf '%s\r\n' "${req[@]}" >&3
+    while IFS= read -r line; do printf '%s\n' "$line"; done <&3
+    exec 3>&-
+}
+
+# Main
+# ----
+
+commands=( chr ord penc fuenc pdec fudec url_encode url_parse http_get
+http_post )
+
+inarray() {
+    local n=$1 h; shift;
+    for h; do [[ $n = "$h" ]] && return; done;
+    return 1;
+}
+name=${BASH_SOURCE##*/}
+inarray "$name" "${commands[@]}" && "$name" "$@"
