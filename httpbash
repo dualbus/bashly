@@ -113,7 +113,7 @@ urlparse() {
     (IFS=':'; printf '%s\n' "${parts[*]}")
 }
 
-http_get() {
+get() {
     declare url=$1 fqdn port path qs frag res
     declare -a req=()
     IFS=: read -r _ _ _ fqdn port path qs frag < <(urlparse "$url")
