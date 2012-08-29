@@ -1,109 +1,249 @@
 #!/usr/bin/awk -f
-function p(d)
-{
-    if(d ~ /^<!/) {
-    } else
-    if(d ~ /^<[?]/) {
-        gsub(/^<|?[[:space:]]*$/, "", d);
-        print d;
-    } else
-    if(d ~ /^<\//) {
-        sub(/^<\//, "", d);
-        print ")" d
-    } else
-    if(d ~ /^</) {
-        sub(/^</, "", d);
-        print "(" d
-    } else
-    if(d ~ /^A/) {
-        sub(/="/, " ", d);
-        sub(/"[[:space:]]*$/, "", d);
-        print d;
-    } else
-    if(d ~ /^-/) {
-        sub(/^-[[:space:]]*/, "", d);
-        print "-" d;
-    } else {
-        print d;
-    }
+
+# Handle printing. FIXME: Entities.
+function px(d) {
+    print d;
 }
 
-# C:0
-# T:1
-# D:2
-# S:3
+function pe(r, m) {
+    printf "pyxawk: error: [L=%d] %s: `%s'\n", NR, r, m > "/dev/stderr";
+}
+
+function pdata(d) {
+    px("-" d);
+}
+
+function pattr(d) {
+    sub(/=["']/, " ", d);
+    sub(/["'][[:space:]]*$/, "", d);
+    px("A" d);
+}
+
+function pcomment(d) {
+    px("#" d);
+}
+
+function pcdata(d) {
+    px("$" d);
+}
+
+function petag(d) {
+    px(")" d);
+}
+
+function pstag(d) {
+    px("(" d);
+}
+
+function ppi(d) {
+    sub(/[?][[:space:]]*$/, "", d);
+    px("?" d);
+}
+
+BEGIN {
+    ST_Z        = 0;
+    ST_TAG      = 1;
+    ST_DQUOTE   = 2;
+    ST_SQUOTE   = 3;
+    ST_COMMENT  = 4;
+    ST_CDATA    = 5;
+    ST_PI       = 6;
+}
+
 {
+    sub(/\r$/, "", $0);
+
     n = length;
     for(i = 1; i <= n + 1; i++) {
-        c = substr($0, i, 1);
-        if(0 == s) {
-            if("<" == c) {
-                s = 1;
-                p("-"(t==""?"\\n":t));
-                t = c;
-            } else {
-                if("" == c) {
-                    if("" != t"")
-                        p("-"t);
-                    t = "";
+        chr = substr($0, i, 1);
+
+        if(ST_Z == st) {
+            if("<" == chr) {
+
+                sstr = substr($0, i+1);
+                if("!" == substr(sstr, 1, 1)) {
+                    if(sstr ~ /^!--/) {
+                        st = ST_COMMENT;
+                    } else if(sstr ~ /^!\[CDATA\[/) {
+                        st = ST_CDATA;
+                    }
+
+                    if(length(buffer)) {
+                        pdata(buffer);
+                    }
+                    buffer = (chr==""?"\\n":(chr=="\\"?"\\\\":chr));
+                } else if("?" == substr(sstr, 1, 1)) {
+                    st = ST_PI;
+                } else if(match(substr($0, i), /^<\/[^<&>/[:space:]]+/)) {
+                    st = ST_Z;
+
+                    if(attr) {
+                        pattr(buffer);
+                        attr = 0;
+                        buffer = "";
+                    }
+
+                    if(length(buffer)) {
+                        pdata(buffer);
+                        buffer = "";
+                    }
+
+                    petag(substr($0, i+RSTART+1, RLENGTH-2));
+
+                    i += RLENGTH;
+
+                    if(">" != substr($0, i, 1)) {
+
+                        if("" != substr($0, i, 1)) {
+                            pe("expecting space", substr($0, i));
+                        }
+
+                        break_flag = 1;
+                        while(break_flag) {
+                            if(0 > getline) {
+                                pe("expecting >", "<EOF>");
+                            }
+
+                            n = length;
+                            for(i = 1; i <= n; i++) {
+                                chr = substr($0, i, 1);
+
+                                if(chr ~ /^[[:space:]]?$/) {
+                                    continue;
+                                } else if(">" != chr) {
+                                    pe("expecting >", substr($0, i));
+                                }
+
+                                break_flag = 0;
+                                break;
+                            }
+
+                        }
+                    }
                 } else {
-                    t = t c;
+                    st = ST_TAG;
+
+                    if(length(buffer)) {
+                        pdata(buffer);
+                        buffer = "";
+                    }
+
+                    # I know, NameChar, but, it's easier this way...
+                    if(match(substr($0, i), /^<[^<&>/[:space:]]+/)) {
+
+                        prev_tag = substr($0, i+RSTART-1, RLENGTH)
+
+                        pstag(substr($0, i+RSTART, RLENGTH-1));
+
+                        i += RLENGTH - 1;
+                    } else {
+                        st = ST_Z;
+
+                        pe("unexpected <", substr($0, i));
+                    }
                 }
+            } else {
+                buffer = buffer (chr==""?"\\n":(chr=="\\"?"\\\\":chr));
             }
-        } else
-        if(1 == s) {
-            if("<" == c) {
-                print "RAWR" > "/dev/stderr"; exit
-            } else
-            if("/" == c) {
+        } else if(ST_TAG == st) {
+            if("<" == chr) {
+                s = ST_Z;
+
+                pe("unexpected <", substr($0, i));
+            } else if("/" == chr) {
                 if(">" == substr($0, i+1, 1)) {
                     i++;
-                    p(t);
-                    p("</"substr(pt,2));
-                    t = "";
-                    s = 0;
+                    st = ST_Z;
+
+                    if(attr) {
+                        pattr(buffer);
+                        attr = 0;
+                    }
+
+                    petag(substr(prev_tag,2));
+
+                    buffer = "";
                 } else {
-                    t = t c;
+                    attr = 1;
+                    buffer = buffer (chr==""?"\\n":(chr=="\\"?"\\\\":chr));
                 }
-            } else
-            if(">" == c) {
-                p(t);
-                pt = t;
-                t = "";
-                s = 0;
-            } else
-            if(c ~ /[[:space:]]/ || "" == c) {
-                if(t ~ /^<[!?]/) {
-                    t = t c;
+            } else if(">" == chr) {
+                st = ST_Z;
+
+                if(attr) {
+                    pattr(buffer);
+                    attr = 0;
+                    buffer = "";
                 } else {
-                    p(t);
-                    if(t ~ /^</)
-                        pt = t;
-                    t = "A";
+                    prev_tag = buffer;
                 }
-            } else
-            if("\"" == c) {
-                s = 2;
-                t = t c;
-            } else
-            if("'" == c) {
-                s = 3;
-                t = t c;
+            } else if(chr ~ /^[[:space:]]?$/) {
+                if(attr) {
+                    pattr(buffer);
+                    attr = 0;
+                }
+
+                buffer = "";
+
+                continue;
+            } else if("\"" == chr) {
+                st = ST_DQUOTE;
+                buffer = buffer (chr==""?"\\n":(chr=="\\"?"\\\\":chr));
+            } else if("'" == chr) {
+                st = ST_SQUOTE;
+                buffer = buffer (chr==""?"\\n":(chr=="\\"?"\\\\":chr));
             } else {
-                t = t c;
+                if(buffer ~ /^</) {
+                    prev_tag = buffer;
+                }
+
+                attr = 1;
+
+                buffer = buffer (chr==""?"\\n":(chr=="\\"?"\\\\":chr));
             }
-        } else
-        if(2 == s) {
-            if("\"" == c) {
-                s = 1;
+        } else if(ST_DQUOTE == st) {
+            if("\"" == chr) {
+                st = ST_TAG;
             }
-            t = t c;
-        } else
-        if(3 == s) {
-            if("'" == c) {
-                s = 1;
+
+            buffer = buffer (chr==""?"\\n":(chr=="\\"?"\\\\":chr));
+        } else if(ST_SQUOTE == st) {
+            if("'" == chr) {
+                st = ST_TAG;
             }
-            t = t c;
+
+            buffer = buffer (chr==""?"\\n":(chr=="\\"?"\\\\":chr));
+        } else if(ST_COMMENT == st) {
+            if(">" == chr && "-->" == substr($0, i-2, 3)) {
+                st = ST_Z;
+
+                pcomment(substr(buffer, 5, length(buffer)-6))
+
+                buffer = "";
+            } else {
+                buffer = buffer (chr==""?"\\n":(chr=="\\"?"\\\\":chr));
+            }
+        } else if(ST_CDATA == st) {
+            if(">" == chr && "]]>" == substr($0, i-2, 3)) {
+                st = ST_Z;
+
+                pcdata(substr(buffer, 10, length(buffer)-11));
+
+                buffer = "";
+            } else {
+                buffer = buffer (chr==""?"\\n":(chr=="\\"?"\\\\":chr));
+            }
+        } else if(ST_PI == st) {
+            # Dquote problem in case > is contained in a qstring.
+            if(">" == chr && "?>" == substr($0, i-1, 2)) {
+                st = ST_Z;
+
+                ppi(buffer)
+
+                buffer = "";
+            } else {
+                buffer = buffer (chr==""?"\\n":(chr=="\\"?"\\\\":chr));
+            }
         }
     }
 }
