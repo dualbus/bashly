@@ -30,11 +30,9 @@ function xb(d,      s, n, i) {
 
 function entity(ent,    xb) {
     if(ent ~ /^#[[:digit:]]+$/) {
-        return ent;
         ent = substr(ent, 2);
         return xb(ent);
     } else if(ent ~ /^#[Xx][[:xdigit:]]+$/) {
-        return ent;
         ent = hex(tolower(substr(ent, 3)));
         return xb(ent);
     } else if(ent in entities) {
@@ -44,7 +42,7 @@ function entity(ent,    xb) {
     }
 }
 
-# Handle printing. FIXME: Entities.
+# Handle printing.
 function px(d) {
     print d;
 }
@@ -52,14 +50,15 @@ function px(d) {
 function pu(d,      s, rstart, rlength) {
     s = "";
 
-#    while(match(d, /&[^&;]+;/)) {
-#        rstart = RSTART;
-#        rlength = RLENGTH;
-#
-#        s = s substr(d, 1, rstart-1);
-#        s = s entity(substr(d, rstart+1, rlength-2));
-#        d = substr(d, rstart+rlength);
-#    }
+    px(d); return;
+    while(match(d, /&[^&;]+;/)) {
+        rstart = RSTART;
+        rlength = RLENGTH;
+
+        s = s substr(d, 1, rstart-1);
+        s = s entity(substr(d, rstart+1, rlength-2));
+        d = substr(d, rstart+rlength);
+    }
 
     print d;
 }
