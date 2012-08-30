@@ -1,0 +1,32 @@
+#!/usr/bin/awk -f
+BEGIN {
+    ORS = "\n\n";
+}
+
+/^\)body/{exit}
+/^\(body/{b=1}
+
+b && /^\)p/{p=0; print buffer; buffer = ""}
+
+/^\)pre/ {P=0}
+
+/^\(pre/ {P=1}
+
+(p||P) && /^-/ {
+    if(P) {
+        gsub(/\\n/, "\n", buffer);
+    } else {
+        gsub(/\\n/, " ", buffer);
+    }
+
+    buffer = buffer substr($0, 2);
+}
+
+p && /^\(a/ {a=1}
+
+a && /^Ahref/ {
+    buffer = buffer "<"substr($0, 7) "> ";
+    a=0;
+}
+
+b && /^\(p/{p=1}
