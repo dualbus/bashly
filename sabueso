@@ -1,0 +1,70 @@
+#!/bin/bash
+
+base_url='http://sabueso.alvarezp.net/search.php?q=%s'
+
+# Helpers
+# -------
+
+chr() {
+    printf \\$(($1/64*100+$1%64/8*10+$1%8))
+} 
+
+# Translates a character to its decimal ASCII value.
+declare -A _ord=()
+for ((i=1; i<256; i++)); do
+    c=$(chr $i)
+    _ord["${c:-$'\n'}"]=$i
+done
+ord() {
+    if ((1 == $#)); then
+        c=${1:0:1}
+        if [[ $c ]]; then
+            printf %d "${_ord[$c]}"
+        else
+            printf 0
+        fi
+    fi
+}
+
+# Percent-encode's a stream of character, but instead of representing spaces as
+# '%20' it represents them as '+'.
+fuenc() {
+    # application/x-www-form-urlencoded
+    declare c i block
+    while IFS= read -r block; do
+        for ((i=0; i<${#block}; i++)); do
+            c=${block:i:1}
+            if [[ $c = [[:alpha:].~-] ]]; then
+                printf %s "$c"
+            elif [[ $c = ' ' ]]; then
+                printf +
+            else
+                printf %%%02X "$(ord "$c")"
+            fi
+        done
+        printf %%0a
+    done
+    for ((i=0; i<${#block}; i++)); do
+        c=${block:i:1}
+        if [[ $c = [[:alpha:].~-] ]]; then
+            printf %s "$c"
+        elif [[ $c = ' ' ]]; then
+            printf +
+        else
+            printf %%%02X "$(ord "$c")"
+        fi
+    done
+}
+
+# Main
+# ----
+term=$1
+printf -v url "$base_url" "$(printf %s "$term" | fuenc)"
+curl -s "$url" | gawk \
+    -vRS='[[:space:]]*</?li[^>]*>[[:space:]]*' \
+    -vOFS='\t' \
+    -F'<[^>]*>' \
+    '(NR+1)%2 {
+        gsub(/\t/, "\\t", $1);
+        print $1,$3;
+    }'
