@@ -12,6 +12,7 @@ function hex(h,     ht, v) {
 }
 
 # I know, it's ugly, but works.
+# FIXME: Use better function names, not even I remember what this means.
 function xb(d,      s, n, i) {
     d = sprintf("%0"int((length(d)+1)/2)*2"d", d);
 
@@ -38,7 +39,7 @@ function entity(ent,    xb) {
     } else if(ent in entities) {
         return entities[ent];
     } else {
-        pe("x", ent);
+        print_error("x", ent);
     }
 }
 
@@ -63,9 +64,11 @@ function pu(d,      s, rstart, rlength) {
     print d;
 }
 
-function pe(r, m) {
+
+function print_error(r, m) {
     printf "pyxawk: error: [L=%d] %s: `%s'\n", NR, r, m > "/dev/stderr";
 }
+
 
 function pdata(d) {
     pu("-" d);
@@ -98,6 +101,7 @@ function ppi(d) {
     px("?" d);
 }
 
+
 BEGIN {
     ST_Z        = 0;
     ST_TAG      = 1;
@@ -125,13 +129,10 @@ BEGIN {
     entities["Uacute"]  = "Ú";
 
 
-    chrtab[0]   = "\\0";
-    chrtab[1]   = "\\001";
-    chrtab[2]   = "\\002";
-    chrtab[3]   = "\\003";
-    chrtab[4]   = "\\004";
-    chrtab[5]   = "\\005";
-    chrtab[6]   = "\\006";
+    # Thanks to mute for the suggestion.
+    for(i = 0; i <= 6; i++) {
+        chrtab[i] = sprintf("\\%o", i);
+    }
     chrtab[7]   = "\\a";
     chrtab[8]   = "\\b";
     chrtab[9]   = "\\t";
@@ -139,248 +140,15 @@ BEGIN {
     chrtab[11]  = "\\v";
     chrtab[12]  = "\\f";
     chrtab[13]  = "\\r";
-    chrtab[14]  = "\\016";
-    chrtab[15]  = "\\017";
-    chrtab[16]  = "\\020";
-    chrtab[17]  = "\\021";
-    chrtab[18]  = "\\022";
-    chrtab[19]  = "\\023";
-    chrtab[20]  = "\\024";
-    chrtab[21]  = "\\025";
-    chrtab[22]  = "\\026";
-    chrtab[23]  = "\\027";
-    chrtab[24]  = "\\030";
-    chrtab[25]  = "\\031";
-    chrtab[26]  = "\\032";
-    chrtab[27]  = "\\033";
-    chrtab[28]  = "\\034";
-    chrtab[29]  = "\\035";
-    chrtab[30]  = "\\036";
-    chrtab[31]  = "\\037";
-    chrtab[32]  = "";
-    chrtab[33]  = "!";
-    chrtab[34]  = "\"";
-    chrtab[35]  = "#";
-    chrtab[36]  = "$";
-    chrtab[37]  = "%";
-    chrtab[38]  = "&";
-    chrtab[39]  = "'";
-    chrtab[40]  = "(";
-    chrtab[41]  = ")";
-    chrtab[42]  = "*";
-    chrtab[43]  = "+";
-    chrtab[44]  = ",";
-    chrtab[45]  = "-";
-    chrtab[46]  = ".";
-    chrtab[47]  = "/";
-    chrtab[48]  = "0";
-    chrtab[49]  = "1";
-    chrtab[50]  = "2";
-    chrtab[51]  = "3";
-    chrtab[52]  = "4";
-    chrtab[53]  = "5";
-    chrtab[54]  = "6";
-    chrtab[55]  = "7";
-    chrtab[56]  = "8";
-    chrtab[57]  = "9";
-    chrtab[58]  = ":";
-    chrtab[59]  = ";";
-    chrtab[60]  = "<";
-    chrtab[61]  = "=";
-    chrtab[62]  = ">";
-    chrtab[63]  = "?";
-    chrtab[64]  = "@";
-    chrtab[65]  = "A";
-    chrtab[66]  = "B";
-    chrtab[67]  = "C";
-    chrtab[68]  = "D";
-    chrtab[69]  = "E";
-    chrtab[70]  = "F";
-    chrtab[71]  = "G";
-    chrtab[72]  = "H";
-    chrtab[73]  = "I";
-    chrtab[74]  = "J";
-    chrtab[75]  = "K";
-    chrtab[76]  = "L";
-    chrtab[77]  = "M";
-    chrtab[78]  = "N";
-    chrtab[79]  = "O";
-    chrtab[80]  = "P";
-    chrtab[81]  = "Q";
-    chrtab[82]  = "R";
-    chrtab[83]  = "S";
-    chrtab[84]  = "T";
-    chrtab[85]  = "U";
-    chrtab[86]  = "V";
-    chrtab[87]  = "W";
-    chrtab[88]  = "X";
-    chrtab[89]  = "Y";
-    chrtab[90]  = "Z";
-    chrtab[91]  = "[";
-    chrtab[92]  = "\\";
-    chrtab[93]  = "]";
-    chrtab[94]  = "^";
-    chrtab[95]  = "_";
-    chrtab[96]  = "`";
-    chrtab[97]  = "a";
-    chrtab[98]  = "b";
-    chrtab[99]  = "c";
-    chrtab[100] = "d";
-    chrtab[101] = "e";
-    chrtab[102] = "f";
-    chrtab[103] = "g";
-    chrtab[104] = "h";
-    chrtab[105] = "i";
-    chrtab[106] = "j";
-    chrtab[107] = "k";
-    chrtab[108] = "l";
-    chrtab[109] = "m";
-    chrtab[110] = "n";
-    chrtab[111] = "o";
-    chrtab[112] = "p";
-    chrtab[113] = "q";
-    chrtab[114] = "r";
-    chrtab[115] = "s";
-    chrtab[116] = "t";
-    chrtab[117] = "u";
-    chrtab[118] = "v";
-    chrtab[119] = "w";
-    chrtab[120] = "x";
-    chrtab[121] = "y";
-    chrtab[122] = "z";
-    chrtab[123] = "{";
-    chrtab[124] = "|";
-    chrtab[125] = "}";
-    chrtab[126] = "~";
-    chrtab[127] = "\\177";
-    chrtab[128] = "\\200";
-    chrtab[129] = "\\201";
-    chrtab[130] = "\\202";
-    chrtab[131] = "\\203";
-    chrtab[132] = "\\204";
-    chrtab[133] = "\\205";
-    chrtab[134] = "\\206";
-    chrtab[135] = "\\207";
-    chrtab[136] = "\\210";
-    chrtab[137] = "\\211";
-    chrtab[138] = "\\212";
-    chrtab[139] = "\\213";
-    chrtab[140] = "\\214";
-    chrtab[141] = "\\215";
-    chrtab[142] = "\\216";
-    chrtab[143] = "\\217";
-    chrtab[144] = "\\220";
-    chrtab[145] = "\\221";
-    chrtab[146] = "\\222";
-    chrtab[147] = "\\223";
-    chrtab[148] = "\\224";
-    chrtab[149] = "\\225";
-    chrtab[150] = "\\226";
-    chrtab[151] = "\\227";
-    chrtab[152] = "\\230";
-    chrtab[153] = "\\231";
-    chrtab[154] = "\\232";
-    chrtab[155] = "\\233";
-    chrtab[156] = "\\234";
-    chrtab[157] = "\\235";
-    chrtab[158] = "\\236";
-    chrtab[159] = "\\237";
-    chrtab[160] = "\\240";
-    chrtab[161] = "\\241";
-    chrtab[162] = "\\242";
-    chrtab[163] = "\\243";
-    chrtab[164] = "\\244";
-    chrtab[165] = "\\245";
-    chrtab[166] = "\\246";
-    chrtab[167] = "\\247";
-    chrtab[168] = "\\250";
-    chrtab[169] = "\\251";
-    chrtab[170] = "\\252";
-    chrtab[171] = "\\253";
-    chrtab[172] = "\\254";
-    chrtab[173] = "\\255";
-    chrtab[174] = "\\256";
-    chrtab[175] = "\\257";
-    chrtab[176] = "\\260";
-    chrtab[177] = "\\261";
-    chrtab[178] = "\\262";
-    chrtab[179] = "\\263";
-    chrtab[180] = "\\264";
-    chrtab[181] = "\\265";
-    chrtab[182] = "\\266";
-    chrtab[183] = "\\267";
-    chrtab[184] = "\\270";
-    chrtab[185] = "\\271";
-    chrtab[186] = "\\272";
-    chrtab[187] = "\\273";
-    chrtab[188] = "\\274";
-    chrtab[189] = "\\275";
-    chrtab[190] = "\\276";
-    chrtab[191] = "\\277";
-    chrtab[192] = "\\300";
-    chrtab[193] = "\\301";
-    chrtab[194] = "\\302";
-    chrtab[195] = "\\303";
-    chrtab[196] = "\\304";
-    chrtab[197] = "\\305";
-    chrtab[198] = "\\306";
-    chrtab[199] = "\\307";
-    chrtab[200] = "\\310";
-    chrtab[201] = "\\311";
-    chrtab[202] = "\\312";
-    chrtab[203] = "\\313";
-    chrtab[204] = "\\314";
-    chrtab[205] = "\\315";
-    chrtab[206] = "\\316";
-    chrtab[207] = "\\317";
-    chrtab[208] = "\\320";
-    chrtab[209] = "\\321";
-    chrtab[210] = "\\322";
-    chrtab[211] = "\\323";
-    chrtab[212] = "\\324";
-    chrtab[213] = "\\325";
-    chrtab[214] = "\\326";
-    chrtab[215] = "\\327";
-    chrtab[216] = "\\330";
-    chrtab[217] = "\\331";
-    chrtab[218] = "\\332";
-    chrtab[219] = "\\333";
-    chrtab[220] = "\\334";
-    chrtab[221] = "\\335";
-    chrtab[222] = "\\336";
-    chrtab[223] = "\\337";
-    chrtab[224] = "\\340";
-    chrtab[225] = "\\341";
-    chrtab[226] = "\\342";
-    chrtab[227] = "\\343";
-    chrtab[228] = "\\344";
-    chrtab[229] = "\\345";
-    chrtab[230] = "\\346";
-    chrtab[231] = "\\347";
-    chrtab[232] = "\\350";
-    chrtab[233] = "\\351";
-    chrtab[234] = "\\352";
-    chrtab[235] = "\\353";
-    chrtab[236] = "\\354";
-    chrtab[237] = "\\355";
-    chrtab[238] = "\\356";
-    chrtab[239] = "\\357";
-    chrtab[240] = "\\360";
-    chrtab[241] = "\\361";
-    chrtab[242] = "\\362";
-    chrtab[243] = "\\363";
-    chrtab[244] = "\\364";
-    chrtab[245] = "\\365";
-    chrtab[246] = "\\366";
-    chrtab[247] = "\\367";
-    chrtab[248] = "\\370";
-    chrtab[249] = "\\371";
-    chrtab[250] = "\\372";
-    chrtab[251] = "\\373";
-    chrtab[252] = "\\374";
-    chrtab[253] = "\\375";
-    chrtab[254] = "\\376";
-    chrtab[255] = "\\377";
+    for(i = 14; i <= 31; i++) {
+        chrtab[i] = sprintf("\\%03o", i);
+    }
+    for(i = 32; i <= 126; i++) {
+        chrtab[i] = sprintf("%c", i);
+    }
+    for(i = 127; i <= 255; i++) {
+        chrtab[i] = sprintf("\\%03o", i);
+    }
 }
 
 {
@@ -430,13 +198,13 @@ BEGIN {
                     if(">" != substr($0, i, 1)) {
 
                         if("" != substr($0, i, 1)) {
-                            pe("expecting space", substr($0, i));
+                            print_error("expecting space", substr($0, i));
                         }
 
                         break_flag = 1;
                         while(break_flag) {
                             if(0 > getline) {
-                                pe("expecting >", "<EOF>");
+                                print_error("expecting >", "<EOF>");
                             }
 
                             n = length;
@@ -446,7 +214,7 @@ BEGIN {
                                 if(chr ~ /^[[:space:]]?$/) {
                                     continue;
                                 } else if(">" != chr) {
-                                    pe("expecting >", substr($0, i));
+                                    print_error("expecting >", substr($0, i));
                                 }
 
                                 break_flag = 0;
@@ -476,7 +244,7 @@ BEGIN {
                     } else {
                         st = ST_Z;
 
-                        pe("unexpected <", substr($0, i));
+                        print_error("unexpected <", substr($0, i));
                     }
                 }
             } else {
@@ -486,7 +254,7 @@ BEGIN {
             if("<" == chr) {
                 s = ST_Z;
 
-                pe("unexpected <", substr($0, i));
+                print_error("unexpected <", substr($0, i));
             } else if("/" == chr) {
                 if(">" == substr($0, i+1, 1)) {
                     i++;
