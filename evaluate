@@ -1,0 +1,13 @@
+#!/bin/bash
+
+trap 'rm -f "$tmpfile"' EXIT
+
+tmpfile=$(mktemp) || exit
+
+cat >   "$tmpfile"
+sed '
+  /^#>>/,$d
+'       "$tmpfile"
+printf  '#>>\n: <<\[\n'
+bash    "$tmpfile"
+printf  '[\n'

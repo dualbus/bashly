@@ -1,0 +1,28 @@
+#!/bin/sh
+s=$1
+od -w1024 -tx1 -v -Ad "${2-/dev/stdin}" | LC_ALL=C awk -vs="$s" '
+BEGIN {
+  s = tolower(s)
+  n = length(s); m = (n - 1)/2
+  for(i = 0; i < m; i++) {
+    S[i+1] = substr(s, i*2 + 1, 2)
+  }
+  u = 1;
+}
+{
+  for(i = 2; i <= NF; i++) {
+    if(S[u] != $i) {
+      u = 1;
+      continue;
+    }
+
+    if(u*2 == n) {
+      o = ($1 + i) - (u + 1);
+      printf "%s: %08x\n", FILENAME, o, o;
+      u = 1;
+    } else {
+      u++;
+    }
+  }
+}
+'

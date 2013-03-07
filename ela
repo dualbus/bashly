@@ -1,0 +1,15 @@
+#!/bin/bash
+file=$1
+output=${2:-/dev/stdout}
+tmpdir=$(mktemp -d)
+trap 'rm -rf "$tmpdir"' EXIT
+
+fifo="$tmpdir"/lq
+
+mkfifo "$fifo" || exit
+
+convert -quality 95 "$file" "$fifo" &
+convert "$file" "$fifo" \
+    -compose difference -composite \
+    -auto-level \
+    "$output"

@@ -1,0 +1,47 @@
+#!/bin/bash
+
+function dot2ip {
+  typeset dot=$1 ip
+  typeset -a comps
+
+  IFS=. read -ra comps <<< "$dot"
+  ip=0
+  ip=$((ip | ((comps[0] & 0xff) << 24) ))
+  ip=$((ip | ((comps[1] & 0xff) << 16) ))
+  ip=$((ip | ((comps[2] & 0xff) <<  8) ))
+  ip=$((ip | ((comps[3] & 0xff) <<  0) ))
+
+  echo "$ip"
+}
+
+function ip2dot {
+  typeset ip=$1 w x y z
+
+  w=$(( (ip >> 24) & 0xff))
+  x=$(( (ip >> 16) & 0xff))
+  y=$(( (ip >>  8) & 0xff))
+  z=$(( (ip >>  0) & 0xff))
+
+  echo "$w.$x.$y.$z"
+}
+
+function bits2mask {
+  typeset bits=$1
+
+  ip2dot "$(( (2**32 - 1) & ~(2**(32 - bits) - 1) ))"
+}
+
+function dotmask {
+  typeset dot=$(dot2ip "$1") mask=$(dot2ip "$2")
+
+  ip2dot "$((dot & mask))"
+}
+
+network=$1
+
+IFS=/ read -r network bits <<< "$network"
+
+ip_a=$(dot2ip "$(dotmask "$network" "$(bits2mask "$bits")")" )
+ip_b=$(( ip_a + 2**(32 - bits) - 1 ))
+
+echo "$(ip2dot "$ip_a") - $(ip2dot "$ip_b")"
