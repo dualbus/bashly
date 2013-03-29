@@ -41,6 +41,14 @@ function bits2mask {
   ip2dot "$(( (2**32 - 1) & ~(2**(32 - bits) - 1) ))"
 }
 
+function mask2bits {
+  typeset i mask=$1
+
+  for (( i = 32; i > 0; i-- )); do
+    [[ "$mask" = $(bits2mask "$i") ]] && echo "$i"
+  done
+}
+
 # Masks an IPv4 address represented in dotted-decimal with a network
 # mask also represented in dotted-decimal.
 #
@@ -60,11 +68,13 @@ function dotmask {
 
 network=$1
 
-[[ $network ]] || exit 1
+if [[ $network ]]; then 
 
-IFS=/ read -r network bits <<< "$network"
+  IFS=/ read -r network bits <<< "$network"
 
-ip_a=$(dot2ip "$(dotmask "$network" "$(bits2mask "$bits")")" )
-ip_b=$(( ip_a + 2**(32 - bits) - 1 ))
+  ip_a=$(dot2ip "$(dotmask "$network" "$(bits2mask "$bits")")" )
+  ip_b=$(( ip_a + 2**(32 - bits) - 1 ))
 
-echo "$(ip2dot "$ip_a") - $(ip2dot "$ip_b")"
+  echo "$(ip2dot "$ip_a") - $(ip2dot "$ip_b")"
+
+fi
