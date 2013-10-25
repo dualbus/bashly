@@ -66,15 +66,23 @@ function dotmask {
 # Starting point
 # --------------
 
-network=$1
+network=$1 netmask=$2
 
-if [[ $network ]]; then 
+                              action=exit_and_insult
+[[ $network ]]             && action=from_cidr
+[[ $network && $netmask ]] && action=to_cidr
 
+
+if [[ $action = 'from_cidr' ]]; then 
   IFS=/ read -r network bits <<< "$network"
 
   ip_a=$(dot2ip "$(dotmask "$network" "$(bits2mask "$bits")")" )
   ip_b=$(( ip_a + 2**(32 - bits) - 1 ))
 
   echo "$(ip2dot "$ip_a") - $(ip2dot "$ip_b")"
-
+elif [[ $action = 'to_cidr' ]]; then
+  ip_a=$(dot2ip "$(dotmask "$network" "$netmask")" )
+  echo "$(ip2dot "$ip_a")/$(mask2bits "$netmask")"
+else
+  :
 fi
