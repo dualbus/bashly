@@ -1,1 +1,0 @@
-ifconfig | awk '$1~/:$/{i=$1;sub(/:$/,"",i);next} $1=="inet"{if(i!="lo")print i,$2}'
