@@ -1,0 +1,88 @@
+#!/bin/bash
+
+# Using command substitution to return values from functions is slow
+# -- i.e. value=$(func) -- Global variables allow fast interaction
+# with functions, at the expense of namespace pollution and
+# hard-to-track program flow.
+
+# Converts a dotted-decimal IPv4 address representation to the 32 bit
+# number.
+function dot2ip {
+  typeset dot=$1 ip
+  typeset -a comps
+
+  IFS=. read -ra comps <<< "$dot"
+  ip=0
+  ip=$((ip | ((comps[0] & 0xff) << 24) ))
+  ip=$((ip | ((comps[1] & 0xff) << 16) ))
+  ip=$((ip | ((comps[2] & 0xff) <<  8) ))
+  ip=$((ip | ((comps[3] & 0xff) <<  0) ))
+
+  echo "$ip"
+}
+
+# Converts a 32 bit unsigned integer to dotted-decimal notation.
+function ip2dot {
+  typeset ip=$1 w x y z
+
+  w=$(( (ip >> 24) & 0xff))
+  x=$(( (ip >> 16) & 0xff))
+  y=$(( (ip >>  8) & 0xff))
+  z=$(( (ip >>  0) & 0xff))
+
+  echo "$w.$x.$y.$z"
+}
+
+# Generates a dotted-decimal representation of a network mask with N
+# bits high.
+function bits2mask {
+  typeset bits=$1
+
+  ip2dot "$(( (2**32 - 1) & ~(2**(32 - bits) - 1) ))"
+}
+
+function mask2bits {
+  typeset i mask=$1
+
+  for (( i = 32; i > 0; i-- )); do
+    [[ "$mask" = $(bits2mask "$i") ]] && echo "$i"
+  done
+}
+
+# Masks an IPv4 address represented in dotted-decimal with a network
+# mask also represented in dotted-decimal.
+#
+# dotmask a.b.c.d m.n.o.p
+#
+function dotmask {
+  typeset dot=$(dot2ip "$1") mask=$(dot2ip "$2")
+
+  ip2dot "$((dot & mask))"
+}
+
+
+
+
+# Starting point
+# --------------
+
+network=$1 netmask=$2
+
+                              action=exit_and_insult
+[[ $network ]]             && action=from_cidr
+[[ $network && $netmask ]] && action=to_cidr
+
+
+if [[ $action = 'from_cidr' ]]; then 
+  IFS=/ read -r network bits <<< "$network"
+
+  ip_a=$(dot2ip "$(dotmask "$network" "$(bits2mask "$bits")")" )
+  ip_b=$(( ip_a + 2**(32 - bits) - 1 ))
+
+  echo "$(ip2dot "$ip_a") - $(ip2dot "$ip_b")"
+elif [[ $action = 'to_cidr' ]]; then
+  ip_a=$(dot2ip "$(dotmask "$network" "$netmask")" )
+  echo "$(ip2dot "$ip_a")/$(mask2bits "$netmask")"
+else
+  :
+fi

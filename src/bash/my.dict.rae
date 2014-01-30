@@ -1,122 +1,69 @@
 #!/bin/bash
 
-base_url='http://lema.rae.es/drae/srv/search?val=%s'
+:load http
 
-# Helpers
-# -------
+#recode() {
+#    local -a args=()
+#    if      type -P recode  >/dev/null 2>&1; then
+#        command recode "$@"
+#    elif    type -P iconv   >/dev/null 2>&1; then
+#        IFS=. read -r from _ to <<< "$1"
+#        args=()
+#        [[ $from ]] && args+=(-f "$from")
+#        [[ $to ]]   && args+=(-t "$to")
+#        iconv "${args[@]}"
+#    else
+#        die 'dependency: recode | iconv'
+#    fi
+#}
+#
+#html2txt() {
+#    local url=$1
+#
+#    if      type -P elinks  >/dev/null 2>&1; then
+#        elinks -no-numbering -no-references -dump "$url" | awk '
+#        {sub(/^[[:space:]]*/,"")}
+#        NR==1,!/^[[:space:]]*$/{b=$0;next}
+#        b{print b; b=""}
+#        1'
+#    elif    type -P lynx    >/dev/null 2>&1; then
+#        lynx -nolist -dump "$url" | recode ISO-8859-1.. | awk '
+#        {sub(/^[[:space:]]*/,"")}
+#        NR==1,!/^[[:space:]]*$/{b=$0;next}
+#        b{print b; b=""}
+#        1'
+#    elif    type -P w3m     >/dev/null 2>&1; then
+#        w3m -O ISO-8859-1 -dump "$url" | recode ISO-8859-1.. | awk '
+#        {sub(/^[[:space:]]*/,"")}
+#        NR==1,!/^[[:space:]]*$/{b=$0;next}
+#        b{print b; b=""}
+#        d++{print c}{c=$0}'
+#    elif    type -P links  >/dev/null 2>&1; then
+#        links -codepage iso-8859-1 -dump "$url" | recode ISO-8859-1.. | awk '
+#        {sub(/^[[:space:]]*/,"")}
+#        NR==1,!/^[[:space:]]*$/{b=$0;next}
+#        b{print b; b=""}
+#        1'
+#    else
+#        die 'dependency: elinks | lynx | w3m | links'
+#    fi
+#}
 
-die() {
-    for arg; do
-        printf '%s: %s\n' "${BASH_SOURCE##*/}" "$arg" >&2
-    done
-    exit 1
+## Dependencies
+## ------------
+#recode      </dev/null >/dev/null
+#html2txt .  </dev/null >/dev/null
+
+
+function main {
+  typeset base_url='http://lema.rae.es/drae/srv/search?val=%s'
+  typeset term=$(printf %s "$1" | http.form-url-encode)
+
+  #printf -v url "$base_url" "$(printf %s "$term" | fuenc | recode ..ISO-8859-1)"
+
+  printf -v url "$base_url" "$term"
+
+  echo "$url"
 }
 
-chr() {
-    printf \\$(($1/64*100+$1%64/8*10+$1%8))
-} 
-
-# Translates a character to its decimal ASCII value.
-declare -A _ord=()
-for ((i=1; i<256; i++)); do
-    c=$(chr $i)
-    _ord["${c:-$'\n'}"]=$i
-done
-ord() {
-    if ((1 == $#)); then
-        c=${1:0:1}
-        if [[ $c ]]; then
-            printf %d "${_ord[$c]}"
-        else
-            printf 0
-        fi
-    fi
-}
-
-# Percent-encode's a stream of character, but instead of representing spaces as
-# '%20' it represents them as '+'.
-fuenc() {
-    # application/x-www-form-urlencoded
-    declare c i block
-    while IFS= read -r block; do
-        for ((i=0; i<${#block}; i++)); do
-            c=${block:i:1}
-            if [[ $c = [[:alpha:].~-] ]]; then
-                printf %s "$c"
-            elif [[ $c = ' ' ]]; then
-                printf +
-            else
-                printf %%%02X "$(ord "$c")"
-            fi
-        done
-        printf %%0a
-    done
-    for ((i=0; i<${#block}; i++)); do
-        c=${block:i:1}
-        if [[ $c = [[:alpha:].~-] ]]; then
-            printf %s "$c"
-        elif [[ $c = ' ' ]]; then
-            printf +
-        else
-            printf %%%02X "$(ord "$c")"
-        fi
-    done
-}
-
-recode() {
-    local -a args=()
-    if      type -P recode  >/dev/null 2>&1; then
-        command recode "$@"
-    elif    type -P iconv   >/dev/null 2>&1; then
-        IFS=. read -r from _ to <<< "$1"
-        args=()
-        [[ $from ]] && args+=(-f "$from")
-        [[ $to ]]   && args+=(-t "$to")
-        iconv "${args[@]}"
-    else
-        die 'dependency: recode | iconv'
-    fi
-}
-
-html2txt() {
-    local url=$1
-
-    if      type -P elinks  >/dev/null 2>&1; then
-        elinks -no-numbering -no-references -dump "$url" | awk '
-        {sub(/^[[:space:]]*/,"")}
-        NR==1,!/^[[:space:]]*$/{b=$0;next}
-        b{print b; b=""}
-        1'
-    elif    type -P lynx    >/dev/null 2>&1; then
-        lynx -nolist -dump "$url" | recode ISO-8859-1.. | awk '
-        {sub(/^[[:space:]]*/,"")}
-        NR==1,!/^[[:space:]]*$/{b=$0;next}
-        b{print b; b=""}
-        1'
-    elif    type -P w3m     >/dev/null 2>&1; then
-        w3m -O ISO-8859-1 -dump "$url" | recode ISO-8859-1.. | awk '
-        {sub(/^[[:space:]]*/,"")}
-        NR==1,!/^[[:space:]]*$/{b=$0;next}
-        b{print b; b=""}
-        d++{print c}{c=$0}'
-    elif    type -P links  >/dev/null 2>&1; then
-        links -codepage iso-8859-1 -dump "$url" | recode ISO-8859-1.. | awk '
-        {sub(/^[[:space:]]*/,"")}
-        NR==1,!/^[[:space:]]*$/{b=$0;next}
-        b{print b; b=""}
-        1'
-    else
-        die 'dependency: elinks | lynx | w3m | links'
-    fi
-}
-
-# Dependencies
-# ------------
-recode      </dev/null >/dev/null
-html2txt .  </dev/null >/dev/null
-
-# Main
-# ----
-term=$1
-printf -v url "$base_url" "$(printf %s "$term" | fuenc | recode ..ISO-8859-1)"
-html2txt "$url"
+main "$@"

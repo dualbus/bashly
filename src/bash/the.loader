@@ -1,0 +1,67 @@
+#!/bin/bash -T
+
+while IFS=' ' builtin read -r _ _ function; do
+  builtin unset -f "$function"
+done < <(builtin declare -Fx)
+
+unset IFS
+
+lines=()
+functions=(
+  __b7ab299a__command_dispatcher
+  __b7ab299a__compile_script
+)
+
+
+
+function __b7ab299a__command_dispatcher {
+  typeset bash_command=$1 IFS trigger rest
+
+  unset IFS
+
+  read -r trigger rest <<< "$bash_command"
+
+  [[ $trigger = :* ]] || {
+    lines+=("$bash_command")
+    return 1
+  }
+
+  case $trigger in
+    :load)
+      "$BASH_SOURCE" "bashlib.$rest";;
+  esac
+
+  return 1
+}
+
+
+function __b7ab299a__compile_script {
+  typeset function
+
+  for function in "${functions[@]}"; do
+    unset -f "$function"
+  done
+
+  # Emit the function declarations
+  declare -fp
+
+  # Emit the source code
+  printf '%s\n' "${lines[@]}"
+}
+
+
+
+shopt -s extdebug;
+
+trap '
+  if ((BASH_LINENO)); then
+    __b7ab299a__command_dispatcher "$BASH_COMMAND"
+  elif [[ "$BASH_COMMAND" = __b7ab299a__compile_script ]]; then
+    __b7ab299a__compile_script
+    exit
+  fi
+  ' DEBUG
+
+source "$1"
+
+__b7ab299a__compile_script

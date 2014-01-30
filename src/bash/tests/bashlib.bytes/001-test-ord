@@ -1,0 +1,9 @@
+:load bytes
+
+function test {
+  [[ $(bytes.ord a) = 97 ]] || return 1
+  [[ $(bytes.ord b) = 98 ]] || return 1
+  [[ $(bytes.ord c) = 99 ]] || return 1
+}
+
+test

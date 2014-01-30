@@ -1,0 +1,12 @@
+#!/bin/bash
+
+function bytes.chr {
+  typeset dec=$1
+  ((0 <= dec && dec < 256))  || return 1
+
+  printf \\$((dec/64*100+dec%64/8*10+dec%8))
+}
+
+function bytes.ord {
+  LC_CTYPE=C printf '%d' "'$1"
+}

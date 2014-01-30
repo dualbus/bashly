@@ -1,160 +1,196 @@
 #!/bin/bash
 
-chr() { printf \\$(($1/64*100+$1%64/8*10+$1%8)); } 
-ord() { LC_CTYPE=C printf '%d' "'$1"; }
+:load common
+:load bytes
+:load net
 
-# RFC3986
-penc() {
-    declare c i block
-    while IFS= read -r block; do
-        for ((i=0; i<${#block}; i++)); do
-            c=${block:i:1}
-            if [[ $c = [[:alpha:].~-] ]]; then
-                printf %s "$c"
-            else
-                printf %%%02X "$(ord "$c")"
-            fi
-        done
-        printf %%0a
-    done
-    for ((i=0; i<${#block}; i++)); do
-        c=${block:i:1}
-        if [[ $c = [[:alpha:].~-] ]]; then
-            printf %s "$c"
-        else
-            printf %%%02X "$(ord "$c")"
-        fi
-    done
-}
 
-# application/x-www-form-urlencoded
-fuenc() {
-    declare c i block
-    while IFS= read -r block; do
-        for ((i=0; i<${#block}; i++)); do
-            c=${block:i:1}
-            if [[ $c = [[:alpha:].~-] ]]; then
-                printf %s "$c"
-            elif [[ $c = ' ' ]]; then
-                printf +
-            else
-                printf %%%02X "$(ord "$c")"
-            fi
-        done
-        printf %%0a
-    done
-    for ((i=0; i<${#block}; i++)); do
-        c=${block:i:1}
-        if [[ $c = [[:alpha:].~-] ]]; then
-            printf %s "$c"
-        elif [[ $c = ' ' ]]; then
-            printf +
-        else
-            printf %%%02X "$(ord "$c")"
-        fi
-    done
-}
+# FIXME: Check against multibyte encodings!
+function http.percent-encode {
+  : RFC3986
 
-pdec() {
-    declare data=${1//\\/\\\\}
-    printf "${data//\%/\\x}"
-}
+  typeset character position data=$1 LC_TYPE=C
 
-fudec() {
-    declare data=${1//'+'/'%20'}
-    pdec "$data"
-}
+  for ((position=0; position<${#data}; position++)); do
+    character=${data:position:1}
 
-# Convert to a QS an associative array of arguments previously percent-encoded.
-# The arguments are expected to be in this order:
-#   k0 k1 k2 ... kn v0 v1 v2 ... vn
-# where 'ki' is the key corresponding to the 'vi' value.
-# qsenc "${!AA[@]}" "${AA[@]}"
-qsenc() {
-    declare offset=$(($#/2))
-    declare i key value sep
-    sep=
-    for ((i=1;i<=offset;i++)); do
-        printf %s%s=%s "$sep" "${@:i:1}" "${@:i+offset:1}"
-        sep='&'
-    done
-}
-
-# Parses a simple URL into its components.
-# It returns a space separated list of the retrieved elements; in case an
-# element is missing, a '?' will be used as a place-holder.
-urlparse() {
-    local url=$1 x y
-    local scheme userpwd username password
-    local netloc fqdn port path qs frag
-    local -a parts
-    IFS=':' read -r scheme x <<< "$url"
-    if [[ $x != '//'* ]]; then
-        scheme=
-        x=//$url
+    if [[ $character = [[:alpha:].~-] ]]; then
+      printf %s "$character"
+    else
+      printf %%%02X "$(bytes.ord "$character")"
     fi
-    x=${x#//}
-    IFS=@ read -r userpwd x <<< "$x"
-    if [[ ! $x ]]; then
-        x=$userpwd userpwd=
-    fi
-    IFS=':' read -r username password <<< "$userpwd"
-    IFS='/' read -r netloc x <<< "$x"
-    IFS=':?' read -r fqdn port y <<< "$netloc"
-    if [[ $y ]]; then
-        x=?$y
-    fi
-    port=${port:-80}
-    IFS='?' read -r path x <<< "$x"
-    path=/$path
-    IFS='#' read -r qs frag <<< "$x"
-    parts=( "$scheme" "$username" "$password"
-            "$fqdn" "$port" "$path" "$qs" "$frag")
-    (IFS=':'; printf '%s\n' "${parts[*]}")
+  done
 }
 
-get() {
-    declare url=$1 fqdn port path qs frag res
-    declare -a req=()
-    IFS=: read -r _ _ _ fqdn port path qs frag < <(urlparse "$url")
-    res=$path
-    [[ $qs ]] && res+=?$qs
-    [[ $frag ]] && res+=#$frag
-    req+=("GET $res HTTP/1.0")
-    req+=("Host: $fqdn")
-    req+=('')
-    { exec 3<>"/dev/tcp/$fqdn/$port"; } 2>/dev/null || die 'Connection refused'
-    printf '%s\r\n' "${req[@]}" >&3
-    while IFS= read -r line; do printf '%s\n' "$line"; done <&3
-    exec 3>&-
+
+function http.form-url-encode {
+  : application/x-www-form-urlencoded
+
+  typeset data=$(http.percent-encode "$1")
+
+  printf %s "${data//'%20'/'+'}"
 }
 
-post() {
-    declare url=$1 form=$2 fqdn port path qs frag res
-    declare -a req=()
-    IFS=: read -r _ _ _ fqdn port path qs frag < <(urlparse "$url")
-    res=$path
-    [[ $qs ]] && res+=?$qs
-    [[ $frag ]] && res+=#$frag
-    req+=("POST $res HTTP/1.0")
-    req+=("Host: $fqdn")
-    req+=("Content-Type: application/x-www-form-urlencoded")
-    req+=("Content-Length: $((${#form}+2))") # form + \r\n
-    req+=('')
-    req+=("$form")
-    { exec 3<>"/dev/tcp/$fqdn/$port"; } 2>/dev/null || die 'Connection refused'
-    printf '%s\r\n' "${req[@]}" >&3
-    while IFS= read -r line; do printf '%s\n' "$line"; done <&3
-    exec 3>&-
+
+function http.percent-decode {
+  typeset data=${1//\\/\\\\}
+
+  printf "${data//\%/\\x}"
 }
 
-# Main
-# ----
-inarray() {
-    local n=$1 h; shift;
-    for h; do [[ $n = "$h" ]] && return; done;
-    return 1;
+
+function http.form-url-decode {
+    typeset data=${1//'+'/'%20'}
+
+    http.percent-decode "$data"
 }
-commands=( chr ord penc fuenc pdec fudec qsenc urlparse get post )
-command=$1; shift
-if inarray "$command" "${commands[@]}"; then "$command" "$@"; fi
+
+
+function http.query-string-encode {
+  : <<EOD
+  Converts an associative array (or a pair of normal arrays) to a
+  query string.
+
+  The percent-encoding is a responsability of the caller.
+  
+  The arguments are expected to be in this order:
+    k0 k1 k2 ... kN v0 v1 v2 ... vN
+  where 'kI' is the key corresponding to the 'vI' value.
+  
+
+  # Sample call
+  declare -A params=(['foo']=bar ['bar']=baz)
+  http.query-string-encode "${!params[@]}" "${params[@]}"
+EOD
+
+
+  typeset middle=$(($#/2))
+  typeset argument separator
+
+  for ((argument = 1; argument <= middle; argument++)); do
+    printf %s%s=%s "$separator" "${@:argument:1}" \
+                                "${@:argument+middle:1}"
+    separator='&'
+  done
+}
+
+
+function http.url-parse {
+  : <<EOD
+  Parses a URL into its components.
+
+  It returns a colon separated list of the retrieved elements in
+  the following order:
+
+  $scheme:$username:$password:$netloc:$port:$path:$query_string:$fragment
+
+  http.url-parse 'http://u:p@www.domain.com:8080/path/to/file.ext?q=s#frag'
+EOD
+
+  typeset url=$1 default_scheme=$2
+  typeset scheme username password netloc port path query_string
+  typeset fragment extglob=$(shopt extglob >/dev/null && printf y)
+  typeset -a components 
+
+  shopt -s extglob
+
+  : Parse the scheme, currently it is generic
+  if    [[ $url = +([!:])?(s)://* ]]; then
+    scheme=${url%%://*} url=${url#+([!:])://}
+  elif  [[ $url = @(//[!/]*|//) ]]; then
+    scheme=$default_scheme url=${url#//}
+  fi
+
+  : Parse username:password combination in URL
+  if [[ $url = *([!@])@* ]]; then
+    IFS=:@ read -r username password url <<< "$url"
+  fi
+
+  : Parse network location '(ip address or domain name)'
+  if [[ $url = +([!:]):+([[:digit:]])?([/?#&]*) ]]; then
+    netloc=${url%%:*} port=${url#"$netloc"} port=${port##*:}
+    url=${url#"$netloc:$port"}
+  elif [[ $url = +([!/?#&])?([/?#&]*) ]]; then
+    netloc=${url%%[/?#&]*}
+    url=${url#"$netloc"}
+
+    : Default ports
+    case $scheme in
+      http) port=80;;
+     https) port=443;;
+    esac
+  fi
+
+  : Parse path
+  path=/
+  if [[ $url = +([!?#&])?([?#&]*) ]]; then
+    path=${url%%[?#&]*}
+    url=${url#"$path"}
+  fi
+
+  : Parse query string
+  if [[ $url = +([!#])?([#]*) ]]; then
+    query_string=${url%%[#]*} query_string=${query_string#'?'}
+    url=${url#"?$query_string"}
+  fi
+
+  : Parse fragment
+  if [[ $url = '#'* ]]; then
+    fragment=${url#'#'}
+  fi
+
+  : Return extglob to the state we found it
+  [[ $extglob ]] || shopt -u extglob
+
+  : Join the components
+  components=(
+    "$scheme" "$username" "$password"
+    "$netloc" "$port" "$path"
+    "$query_string" "$fragment"
+  )
+
+  (IFS=':'; printf %s "${components[*]}")
+}
+
+
+function http.get {
+  typeset url=$1
+  typeset netloc port path query_string fragment resource
+  typeset -a request=()
+
+  IFS=: read -r scheme _ _ netloc port path query_string _ \
+    < <(http.url-parse "$url")
+
+  resource=$path
+
+  [[ $query_string ]] && resource+=?$query_string
+
+  request+=("GET $resource HTTP/1.0")
+  request+=("Host: $netloc")
+  request+=('')
+
+  printf '%s\r\n' "${request[@]}" | net.tcp-send "$netloc" "$port"
+}
+
+# FIXME: check against header injection (i.e. $resource)
+function http.post {
+  typeset url=$1 form=$2
+  typeset netloc port path query_string fragment resource
+  typeset -a request=()
+
+  IFS=: read -r scheme _ _ netloc port path query_string _ \
+    < <(http.url-parse "$url")
+
+  resource=$path
+
+  [[ $query_string ]] && resource+=?$query_string
+
+  request+=("POST $resource HTTP/1.0")
+  request+=("Host: $netloc")
+  request+=("Content-Type: application/x-www-form-urlencoded")
+  request+=("Content-Length: $((${#form}+2))") # form + \r\n
+  request+=('')
+  request+=("$form")
+
+  printf '%s\r\n' "${request[@]}" | net.tcp-send "$netloc" "$port"
+}

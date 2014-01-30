@@ -1,0 +1,11 @@
+#!/bin/bash
+
+function common.die {
+  typeset arg
+
+  for arg; do
+    printf '%s: %s\n' "$BASH_SOURCE" "$arg" >&2
+  done
+
+  exit 1
+}

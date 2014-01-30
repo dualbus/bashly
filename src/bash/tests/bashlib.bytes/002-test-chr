@@ -1,0 +1,9 @@
+:load bytes
+
+function test {
+  [[ $(bytes.chr 97) = a ]] || return 1
+  [[ $(bytes.chr 98) = b ]] || return 1
+  [[ $(bytes.chr 99) = c ]] || return 1
+}
+
+test
