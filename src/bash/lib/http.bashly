@@ -28,19 +28,19 @@ function http.form-url-encode {
 
   typeset data=$(http.percent-encode "$1")
 
-  printf %s "${data//'%20'/'+'}"
+  printf %s "${data//%20/+}"
 }
 
 
 function http.percent-decode {
   typeset data=${1//\\/\\\\}
 
-  printf "${data//\%/\\x}"
+  printf "${data//%/\\x}"
 }
 
 
 function http.form-url-decode {
-    typeset data=${1//'+'/'%20'}
+    typeset data=${1//+/%20}
 
     http.percent-decode "$data"
 }
@@ -59,7 +59,7 @@ function http.query-string-encode {
   
 
   # Sample call
-  declare -A params=(['foo']=bar ['bar']=baz)
+  typeset -A params=(['foo']=bar ['bar']=baz)
   http.query-string-encode "${!params[@]}" "${params[@]}"
 EOD
 
@@ -155,7 +155,8 @@ EOD
 
 function http.get {
   typeset url=$1
-  typeset netloc port path query_string fragment resource
+  typeset scheme username password netloc port path query_string
+  typeset fragment resource IFS=:
   typeset -a request=()
 
   IFS=: read -r scheme _ _ netloc port path query_string _ \
@@ -175,10 +176,11 @@ function http.get {
 # FIXME: check against header injection (i.e. $resource)
 function http.post {
   typeset url=$1 form=$2
-  typeset netloc port path query_string fragment resource
+  typeset scheme username password netloc port path query_string
+  typeset fragment resource IFS=:
   typeset -a request=()
 
-  IFS=: read -r scheme _ _ netloc port path query_string _ \
+  read -r scheme _ _ netloc port path query_string _ \
     < <(http.url-parse "$url")
 
   resource=$path
