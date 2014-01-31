@@ -1,0 +1,49 @@
+Please read the makefile to check the sample script.
+
+(or check the lib/http.bashly, src/my.paste.dpaste, and
+bashly scripts)
+
+Basically, you make a "source" script, which you then "compile" to
+its final form, "linking" libraries to it.
+
+Libraries are just a bundle of bash functions, which attempt to solve
+common problems.
+
+The points of having this mechanism:
+
+- Allow code reuse, but without copy-pasting between scripts.
+- Remove the hassle of "linking" libraries on runtime via the
+  ''source'' command. It's a hassle, because you have to sometimes
+  hard-code paths to libraries, and modifications are usual just to
+  use a few functions.
+- Just because I thought it would be cool to have something like this
+  in bash.
+- Allow for easier testability of the libraries, because each one
+  lives in its own file, and your test code just loads that specific
+  library. (I'm thinking if it would be possible to disable the
+  recursive loading and instead mock the functions on which the
+  tested library depends, so that it's easier to test the individual
+  functions)
+
+The drawbacks identified so far:
+
+- All your application code has to be wrapped within a "main"
+  function (you choose whatever name you want, just make sure to call
+  it last in the script)
+- Currently all functions from a library are included, there's no
+  evident way of just manually selecting a few. Maybe an explicit
+  :use trigger to mark which functions we want to be loaded, though
+  then we would have to manually determine on what other functions
+  the included functions depend on... sounds like an inception hell.
+- Introduces the extraneous :load command.
+- I'm looking for a way to introduce private functions, maybe as
+  functions expanded inline, to avoid polluting with helper functions
+  that make only sense when called from another function (like having
+  the recursive helper function foo_rec and the entry function foo,
+  keeping foo_rec hidden, and exposing only rec).
+- Of course, the typical drawbacks of bash apply, namely the
+  difficulty of passing around arrays between functions. Creativity
+  must be applied to overcome this issue.
+- Of course, the typical drawbacks of bash apply, namely the
+  difficulty of passing around arrays between functions. Creativity
+  must be applied to overcome this issue.

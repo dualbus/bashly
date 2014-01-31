@@ -1,28 +1,54 @@
 #!/bin/bash -T
 
+# Remove exported functions from the environment. Since builtins can
+# be masked by functions, these could cause us trouble if they
+# collide with a builtin we use, like read.
 while IFS=' ' builtin read -r _ _ function; do
   builtin unset -f "$function"
-done < <(builtin declare -Fx)
+done < <(builtin typeset -Fx)
 
 
 
 
 
+# We'll use this array to store the lines we're reading while
+# sourcing the file.
 typeset -a bashly_code_lines=()
+
+# Functions defined by bashly. The "random" prefix is a way to avoid
+# collisions with a user defined function. This array is used to
+# "clean up" the environment before exporting the function
+# definitions to the "compiled" script.
 typeset -a bashly_functions=(
   __b7ab299a__command_dispatcher
   __b7ab299a__compile_script
   __b7ab299a__load_bashly
 )
+
+# Extensions used by bashly libraries. Just in case we might want to
+# add more in the future (like a shorter name).
 typeset -a bashly_extensions=(
   bashly
 )
+
+# Set of loaded modules, to avoid loading twice the same module. I
+# don't know if this helps in the case of circular dependencies, but
+# I expect it to. Must investigate further. FIXME: test if it works
+# with circular dependencies.
 typeset -A bashlies=()
 
 
 
 
 
+# The command dispatcher function reads triggers from the source
+# code, and if it finds a special trigger, it executes its related
+# command.
+#
+# Currently, these are the defined triggers:
+# - :load <library-name-without-extension>
+#
+# Make sure to not use that name in your applications.
 function __b7ab299a__command_dispatcher {
   typeset bash_command=$1 IFS trigger rest
 
@@ -44,6 +70,19 @@ function __b7ab299a__command_dispatcher {
 }
 
 
+# Script "compilation" is more like sourcing snippets of code from
+# "libraries". So far, what this means is that you:
+#
+# 1) Load dependencies from a "source" script
+# 2) Dependencies are basically a compilation of functions.
+# 3) Functions are "scoped" using the following convention:
+#     <library>.<function-name>
+# 4) Due to the way this script works, your main code has to be
+#    wrapped in a function, because code outside functions is
+#    evaluated on "compile" time.
+# 5) A "compiled" script is basically the original script with the
+#    library functions expanded.
+#
 function __b7ab299a__compile_script {
   typeset function
 
@@ -52,13 +91,21 @@ function __b7ab299a__compile_script {
   done
 
   # Emit the function declarations
-  declare -fp
+  typeset -fp
 
   # Emit the source code
   printf '%s\n' "${bashly_code_lines[@]}"
 }
 
 
+# Library loading is achieved by a recursive call to this script. So,
+# make sure you install this script and run it in a way that it's
+# able to find itself (through $BASH_SOURCE).
+#
+# Libraries are searched PATH-style, from the BASHLY_PATH environment
+# variable. You just make sure to set its value before compiling.
+# Think of it as an "include path", if that makes sense.
+#
 function __b7ab299a__load_bashly {
   typeset bashly=$1 IFS=:
   typeset place extension fd module
@@ -103,6 +150,10 @@ for bashly_loaded_module in "${bashly_loaded_modules[@]}"; do
   bashlies["$bashly_loaded_module"]=loaded
 done
 
+# The magic of the script comes from using the extdebug shell option.
+# It basically parses the input file, and loads all function
+# declarations, executing loops, conditionals, and other types of
+# statements, except that simple commands have no effect at all.
 shopt -s extdebug;
 
 trap '
