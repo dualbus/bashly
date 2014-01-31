@@ -1,6 +1,10 @@
 tests=\
+	array \
 	bytes \
-	http
+	http \
+	process \
+	regex \
+	shell
 
 bashly=BASHLY_PATH=../lib ../bashly
 bash=/bin/bash
@@ -11,5 +15,6 @@ all: $(tests)
 
 .bashly:
 	for t in $</*; do \
+		echo running "$$t"; \
 		$(bashly) "$$t" | $(bash);\
 	done

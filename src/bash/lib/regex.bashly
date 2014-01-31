@@ -1,1 +1,17 @@
 : regex.quote
+function regex.quote {
+  typeset i character string=$1
+
+  for ((i = 0; i < ${#string}; i++)); do
+    character=${string:i:1}
+
+    case $character in
+      [[:alnum:]]|[[space:]])
+        printf %s       "$character";;
+      [![:graph:]]|[]])
+        printf '\\%s'   "$character";;
+      *)
+        printf '[\\%s]' "$character";;
+    esac
+  done
+}

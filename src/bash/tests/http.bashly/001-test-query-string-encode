@@ -2,8 +2,10 @@
 
 :load http
 
-test() {
+function test {
   [[ $(http.query-string-encode a b 1 2) = 'a=1&b=2' ]] || return 1
+  
+  return 0
 }
 
 test

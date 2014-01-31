@@ -1,1 +1,20 @@
-: shell.quote
+function shell.quote {
+  : shell.quote
+
+  typeset string=$1
+  typeset quote=\'
+
+  printf "'%s'" "${string//"$quote"/$quote\\$quote$quote}"
+}
+
+function shell.double-quote {
+  : shell.double-quote
+
+  typeset string=$1
+
+  string=${string//\\/\\\\}
+  string=${string//\$/\\\$}
+  string=${string//\`/\\\`}
+
+  printf '"%s"' "${string//\"/\\\"}"
+}

@@ -12,6 +12,8 @@ function test {
   [[ $(http.url-parse 'http://netloc/path?query=string#fragment') = 'http:::netloc:80:/path:query=string:fragment' ]] || return 1
   [[ $(http.url-parse 'http://username:password@netloc?query=string#fragment') = 'http:username:password:netloc:80:/:query=string:fragment' ]] || return 1
   [[ $(http.url-parse 'http://netloc/path#fragment') = 'http:::netloc:80:/path::fragment' ]] || return 1
+
+  return 0
 }
 
 test

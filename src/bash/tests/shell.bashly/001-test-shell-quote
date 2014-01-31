@@ -1,0 +1,10 @@
+:load shell
+
+function test {
+  [[ $(shell.quote "a'b") = "'a'\\''b'" ]] || return 1
+  [[ $(shell.quote "a\\'b") = "'a\\'\\''b'" ]] || return 1
+
+  return 0
+}
+
+test

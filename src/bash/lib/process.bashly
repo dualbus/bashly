@@ -1,3 +1,46 @@
-: process.grep # pgrep
-: process.is-alive
-: process.timeout seconds command
+function process.search {
+  : process.search # pgrep
+
+  typeset name=$1
+  typeset IFS pid comm return=1
+
+  unset IFS
+
+  while read -r pid comm; do
+    if [[ $comm = $name ]]; then
+      printf '%s\n' "$pid"; return=0
+    fi
+  done < <(ps -e -o pid= -o comm=)
+
+  return "$return"
+}
+
+
+
+function process.is-alive {
+  : process.is-alive
+
+  typeset pid=$1
+
+  kill -0 "$pid" 2>/dev/null
+}
+
+
+function process.timeout {
+  : process.timeout seconds command
+
+  typeset seconds=$1
+
+  (
+    {
+      sleep "$seconds";
+
+      kill "$BASHPID" && \
+        sleep 1 && kill    "$BASHPID" && \
+        sleep 3 && kill    "$BASHPID" && \
+        sleep 5 && kill -9 "$BASHPID";
+    } &
+
+    exec "$@"
+  )
+}
