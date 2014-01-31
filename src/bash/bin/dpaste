@@ -20,7 +20,6 @@ bytes.ord ()
     LC_CTYPE=C printf '%d' "'$1"
 }
 
-
 network.socket-get-device () 
 { 
     typeset type=$1 netloc=$2 port=$3;

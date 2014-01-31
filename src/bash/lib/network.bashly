@@ -1,7 +1,6 @@
 #!/bin/bash
 
 :load common
-:load shell
 
 function network.socket-get-device {
   typeset type=$1 netloc=$2 port=$3
