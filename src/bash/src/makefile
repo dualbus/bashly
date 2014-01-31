@@ -1,5 +1,5 @@
 bin=\
-		my.paste.dpaste.cbash
+		dpaste.cbash
 
 bindir=../bin
 
