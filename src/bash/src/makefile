@@ -1,3 +1,5 @@
+.POSIX:
+
 bin=\
 		dpaste.cbash
 

@@ -1,3 +1,5 @@
+.POSIX:
+
 tests=\
 	array \
 	bytes \
@@ -16,5 +18,5 @@ all: $(tests)
 .bashly:
 	for t in $</*; do \
 		echo running "$$t"; \
-		$(bashly) "$$t" | $(bash);\
+		$(bashly) "$$t" | $(bash) || exit 1;\
 	done

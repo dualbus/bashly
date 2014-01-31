@@ -1,0 +1,14 @@
+:load bytes
+
+function 2x {
+  od -t x1 -An -v | tr -d '[[:space:]]'
+}
+
+function test {
+
+  [[ $(bytes.write-uint32-le 12345 | 2x) = 39300000 ]]
+
+  return 0
+}
+
+test

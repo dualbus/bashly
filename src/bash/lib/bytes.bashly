@@ -7,6 +7,35 @@ function bytes.chr {
   printf \\$((dec/64*100+dec%64/8*10+dec%8))
 }
 
+
 function bytes.ord {
   LC_CTYPE=C printf '%d' "'$1"
+}
+
+
+function bytes.write-uint32-le {
+  typeset number=$1
+  typeset hex
+
+  ((number >> 32)) && return 1
+
+  printf -v hex '\\x%x' \
+    "$((  number         & 0xff))" "$(( (number >>  8)  & 0xff))" \
+    "$(( (number >> 16)  & 0xff))" "$(( (number >> 24)  & 0xff))"
+
+  printf "$hex"
+}
+
+
+function bytes.write-uint32-be {
+  typeset number=$1
+  typeset hex
+
+  ((number >> 32)) && return 1
+
+  printf -v hex '\\x%x' \
+    "$(( (number >> 24)  & 0xff))" "$(( (number >> 16)  & 0xff))" \
+    "$(( (number >>  8)  & 0xff))" "$((  number         & 0xff))"
+
+  printf "$hex"
 }

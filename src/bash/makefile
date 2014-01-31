@@ -1,13 +1,15 @@
+.POSIX:
+
 testdir=tests
 srcdir=src
 
 all: compile
 
 compile:
-	(cd $(srcdir) && make)
+	(cd $(srcdir)  && $(MAKE))
 
 test:
-	(cd $(testdir) && make)
+	(cd $(testdir) && $(MAKE))
 
 clean:
-	(cd $(srcdir) && make clean)
+	(cd $(srcdir)  && $(MAKE) clean)
