@@ -114,8 +114,6 @@ function __b7ab299a__load_bashly {
   [[ $bashly ]] || return 1
 
   if [[ ${bashlies["$bashly"]} = loaded ]]; then
-    printf '%s %s\n' "$(date +%s.%N)" "not loading $bashly, loaded already" >&2
-
     return 0
   fi
 

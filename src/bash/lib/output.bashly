@@ -1,0 +1,3 @@
+: output.spinner
+: output.progress-bar
+: output.color red "message"

@@ -1,0 +1,3 @@
+: process.grep # pgrep
+: process.is-alive
+: process.timeout seconds command

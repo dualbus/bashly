@@ -1,0 +1,3 @@
+: number.is-natural
+: number.is-integer
+: number.is-float

@@ -1,12 +1,10 @@
-BIN=\
-		bin/my.paste.dpaste
+testdir=tests
+srcdir=src
 
-all: $(BIN)
+all: compile test
 
-clean:
-	-rm $(BIN)
+compile:
+	(cd $(srcdir) && make)
 
-bin/my.paste.dpaste:
-	echo '#!/usr/bin/env bash' > bin/my.paste.dpaste
-	BASHLY_PATH=lib/ ./bashly src/my.paste.dpaste >> bin/my.paste.dpaste
-	chmod +x bin/my.paste.dpaste
+test:
+	(cd $(testdir) && make)

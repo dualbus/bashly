@@ -3,7 +3,7 @@
 :load common
 :load shell
 
-function net.socket-get-device {
+function network.socket-get-device {
   typeset type=$1 netloc=$2 port=$3
 
   [[ $type = @(tcp|udp) ]] || return 1
@@ -13,11 +13,11 @@ function net.socket-get-device {
   printf %s "/dev/$type/$netloc/$port"
 }
 
-function net.tcp-send {
+function network.tcp-send {
   typeset netloc=$1 port=$2
   typeset line socket fd
   
-  socket=$(net.socket-get-device tcp "$netloc" "$port") || return 1
+  socket=$(network.socket-get-device tcp "$netloc" "$port") || return 1
 
   (
     exec 3<>"$socket"

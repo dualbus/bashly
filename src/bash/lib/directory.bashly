@@ -1,0 +1,5 @@
+: directory.list-by-date
+: directory.is-empty
+: directory.count *.mpg
+: directory.rename *.foo *bar
+: directory.temporary

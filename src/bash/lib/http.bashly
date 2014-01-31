@@ -2,7 +2,7 @@
 
 :load common
 :load bytes
-:load net
+:load network
 
 
 # FIXME: Check against multibyte encodings!
@@ -170,7 +170,7 @@ function http.get {
   request+=("Host: $netloc")
   request+=('')
 
-  printf '%s\r\n' "${request[@]}" | net.tcp-send "$netloc" "$port"
+  printf '%s\r\n' "${request[@]}" | network.tcp-send "$netloc" "$port"
 }
 
 # FIXME: check against header injection (i.e. $resource)
@@ -194,5 +194,5 @@ function http.post {
   request+=('')
   request+=("$form")
 
-  printf '%s\r\n' "${request[@]}" | net.tcp-send "$netloc" "$port"
+  printf '%s\r\n' "${request[@]}" | network.tcp-send "$netloc" "$port"
 }
