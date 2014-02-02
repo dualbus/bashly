@@ -6,7 +6,8 @@ tests=\
 	http \
 	process \
 	regex \
-	shell
+	shell \
+	template
 
 bashly=BASHLY_PATH=../lib ../bashly
 bash=/bin/bash

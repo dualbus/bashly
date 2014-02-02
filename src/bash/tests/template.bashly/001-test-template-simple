@@ -1,0 +1,17 @@
+:load template
+
+function test {
+  [[ $(printf 'foo'      | foo=bar template.simple) = 'foo'  ]] || return 1
+  [[ $(printf '$foo'     | foo=bar template.simple) = 'bar'  ]] || return 1
+  [[ $(printf '${foo}'   | foo=bar template.simple) = 'bar'  ]] || return 1
+  [[ $(printf '${foo}s'  | foo=bar template.simple) = 'bars' ]] || return 1
+
+  printf '$%%'      | template.simple && return 1
+  printf '${foo{'   | template.simple && return 1
+  printf '$'        | template.simple && return 1
+  printf '${'       | template.simple && return 1
+
+  return 0
+}
+
+test
