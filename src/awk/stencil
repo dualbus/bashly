@@ -1,0 +1,153 @@
+#!/usr/bin/awk -f
+function emit_error_message() {
+  printf "[%s]: %s: %s\n", NR, ERROR, ERROR_CAUSE;
+}
+
+function _emit_character(c) {
+  printf "%s", c
+}
+
+function _push_to_variable_name(c) {
+  CURRENT_VAR_NAME = CURRENT_VAR_NAME c
+}
+
+function _emit_variable() {
+  printf "%s", ENVIRON[CURRENT_VAR_NAME]
+  CURRENT_VAR_NAME = ""
+}
+
+function _string_fsm(c) {
+  if(c == "$") {
+    return "dollar";
+  } else
+  if(c == "\\") {
+    return "escape";
+  }
+
+  _emit_character(c);
+
+  return "string";
+}
+
+function _escape_fsm(c) {
+  _emit_character(c);
+
+  return "string";
+}
+
+function _dollar_fsm(c) {
+  if("{" == c) {
+    return "left-brace";
+  } else if(index(VAR_NAME, c)) {
+    _push_to_variable_name(c);
+
+    return "variable";
+  }
+
+  ERROR = "invalid variable name character"
+  ERROR_CAUSE = c
+
+  return "error";
+}
+
+function _variable_fsm(c) {
+  if(index(VAR_NAME, c)) {
+    _push_to_variable_name(c);
+
+    return "variable";
+  }
+
+  _emit_variable();
+
+  return _string_fsm(c);
+}
+
+function _left_brace_fsm(c) {
+  if(index(VAR_NAME, c)) {
+    _push_to_variable_name(c);
+
+    return "variable-brace";
+  }
+
+  ERROR = "invalid variable name character"
+  ERROR_CAUSE = c
+
+  return "error";
+}
+
+function _right_brace_fsm(c) {
+  return _string_fsm(c);
+}
+
+function _variable_brace_fsm(c) {
+  if("}" == c) {
+    _emit_variable();
+  
+    return "right-brace";
+  } else
+  if(index(VAR_NAME, c)) {
+    _push_to_variable_name(c);
+
+    return "variable-brace";
+  }
+
+  ERROR = "missing closing right brace"
+  ERROR_CAUSE = c
+
+  return "error";
+}
+
+function fsm(state, c) {
+  if(state == "string") {
+    return _string_fsm(c);
+  } else
+  if(state == "escape") {
+    return _escape_fsm(c);
+  } else
+  if(state == "dollar") {
+    return _dollar_fsm(c);
+  } else
+  if(state == "variable") {
+    return _variable_fsm(c);
+  } else
+  if(state == "left-brace") {
+    return _left_brace_fsm(c);
+  } else
+  if(state == "right-brace") {
+    return _right_brace_fsm(c);
+  } else
+  if(state == "variable-brace") {
+    return _variable_brace_fsm(c);
+  } else
+  if(state == "error") {
+    emit_error_message();
+    exit 1;
+  }
+}
+
+BEGIN {
+  VAR_NAME = "abcdefghijklmnopqrstuvwxyz"
+  VAR_NAME = VAR_NAME toupper(VAR_NAME)
+  VAR_NAME = VAR_NAME "_-"
+
+  CURRENT_VAR = ""
+
+  state = "string"
+}
+
+{
+  n = length;
+  for(i = 1; i <= (n + 1); i++) {
+    if(i == n + 1) {
+      c = "\n";
+    } else {
+      c = substr($0, i, 1);
+    }
+
+    state = fsm(state, c);
+  }
+}
+
+END {
+  fsm(state, "");
+}
