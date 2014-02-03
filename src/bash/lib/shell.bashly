@@ -1,11 +1,15 @@
+#!/bin/bash
+
+
 function shell.quote {
   : shell.quote
 
   typeset string=$1
-  typeset quote=\'
+  typeset quote="'"
 
   printf "'%s'" "${string//"$quote"/$quote\\$quote$quote}"
 }
+
 
 function shell.double-quote {
   : shell.double-quote

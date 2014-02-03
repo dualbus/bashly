@@ -1,3 +1,20 @@
-: cmdline.arguments
+: <<EOF
+- name of argument
+- long form
+- short form
+- is required?
+- number of args
+- help string
+- metavar
+
+name=help:long=help:short=h:required=:arguments=0:help=show this help
+
+cmdline.arguments 
+EOF
+
+function cmdline.arguments {
+  : cmdline.arguments
+}
+
 : cmdline.usage
 : cmdline.help

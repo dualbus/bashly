@@ -1,3 +1,6 @@
+#!/bin/bash
+
+
 function process.search {
   : process.search # pgrep
 
@@ -14,7 +17,6 @@ function process.search {
 
   return "$return"
 }
-
 
 
 function process.is-alive {

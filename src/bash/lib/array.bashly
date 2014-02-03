@@ -1,3 +1,6 @@
+#!/bin/bash
+
+
 # The interface for returning arrays:
 #
 # Output a NUL delimited list of elements. I'm sorry, but that's the
