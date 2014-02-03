@@ -1,1 +1,14 @@
 : string.trim string chars
+
+function string.c-escape {
+  typeset string=$1
+
+  string=${string//\\/\\\\}
+  string=${string//$'\n'/\\n}
+  string=${string//$'\r'/\\r}
+  string=${string//$'\t'/\\t}
+
+  printf %s "$string"
+}
+
+

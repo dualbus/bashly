@@ -117,6 +117,9 @@ function __b7ab299a__load_bashly {
     return 0
   fi
 
+  # Replace dots with forward slashes.
+  bashly=${bashly//./\/}
+
   read -ra places <<< "$BASHLY_PATH"
 
   for place in "${places[@]}"; do

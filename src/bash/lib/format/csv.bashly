@@ -1,0 +1,175 @@
+#!/bin/bash
+
+:load string
+
+
+
+function format.csv.escape {
+  typeset string=$1
+
+  printf %s "${string//\"/\"\"}"
+}
+
+
+function format.csv.oak {
+  typeset buffer=$1 last_field=$2 state=$3
+  typeset row column
+
+  IFS=: read -r row column <<< "$state"
+
+  printf '/[%d][%d]\t%s\n' \
+    "$row" "$column" \
+    "$(string.c-escape "$buffer")" >&3
+
+  printf %d:%d "$((row+1))" "$((column+1))"
+}
+
+
+function format.csv.__parse.emit-field {
+  typeset buffer=$1 last_field=$2
+  typeset state
+
+  if [[ ! $callback ]]; then
+    printf %q\\n "$buffer" >&3
+  else
+    IFS= read -r state < \
+      <("$callback" "$buffer" "$last_field")
+  fi
+}
+
+
+function format.csv.__parse.initial {
+  typeset character=$1 buffer=$2
+
+  if [[ $character = '"' ]]; then
+    printf %s "double-quote:$buffer"; return
+  elif [[ $character = ',' ]]; then
+    format.csv.__parse.emit-field "$buffer"
+    printf %s 'initial'; return
+  elif [[ $character = $'\n' ]]; then
+    format.csv.__parse.emit-field "$buffer" last
+    printf %s 'initial'; return
+  elif [[ $character = $'\r' ]]; then
+    format.csv.__parse.emit-field "$buffer" last
+    printf %s 'carriage-return'; return
+  elif [[ $character = '' ]]; then
+    format.csv.__parse.emit-field "$buffer" last
+    printf %s 'initial'; return
+  fi
+
+  printf %s "field:$buffer$character"
+}
+
+
+function format.csv.__parse.field {
+  typeset character=$1 buffer=$2
+  
+  if [[ $character != '"' ]]; then
+    format.csv.__parse.initial "$character" "$buffer"; return
+  fi
+
+  printf %s "field:$buffer$character"
+}
+
+
+function format.csv.__parse.double-quote {
+  typeset character=$1 buffer=$2
+
+  if [[ $character = '"' ]]; then
+    printf %s "escape:$buffer"; return
+  fi
+
+  printf %s "double-quote:$buffer$character"
+}
+
+
+function format.csv.__parse.escape {
+  typeset state character=$1 buffer=$2
+
+  : should not return field
+  IFS=: read -rd '' state buffer < \
+    <(format.csv.__parse.initial "$character" "$buffer")
+
+  if [[ $state != 'field' ]]; then
+    printf %s "$state:$buffer"; return
+  fi
+
+  : expecting double-quote, comma, carriage-return or line-feed
+  echo panic >&2
+  return 1
+}
+
+
+function format.csv.__parse.carriage-return {
+  if [[ $character = $'\n' ]]; then
+    printf %s 'initial'
+  fi
+
+  : expecting line-feed
+  echo panic >&2
+  return 1
+}
+
+
+function format.csv.__parse.fsm {
+  typeset state=$1 character=$2 buffer=$3
+
+  case $state in
+    field)
+      format.csv.__parse.field "$character" "$buffer";;
+    double-quote)
+      format.csv.__parse.double-quote "$character" "$buffer";;
+    initial)
+      format.csv.__parse.initial "$character" "$buffer";;
+    escape)
+      format.csv.__parse.escape "$character" "$buffer";;
+    carriage-return)
+      format.csv.__parse.carriage-return "$character" "$buffer";;
+  esac
+
+  return 0
+}
+
+
+function format.csv.parse {
+  : format.csv.parse 
+
+  typeset i line character variable saw_field=0 state=initial
+  typeset -x callback=$1
+
+  {
+    while IFS= read -r line; do
+      saw_field=0
+
+      for ((i = 0; i < ${#line}; i++)); do
+        character=${line:i:1}
+
+        IFS=: read -rd '' state buffer < \
+          <(format.csv.__parse.fsm "$state" "$character" "$buffer")
+
+        [[ $state = field ]] && ((saw_field++))
+      done
+
+      IFS=: read -rd '' state buffer < \
+        <(format.csv.__parse.fsm "$state" $'\n' "$buffer")
+    done
+
+    saw_field=0
+
+    for ((i = 0; i < ${#line}; i++)); do
+      character=${line:i:1}
+
+      IFS=: read -rd '' state buffer < \
+        <(format.csv.__parse.fsm "$state" "$character" "$buffer")
+
+      [[ $state = field ]] && ((saw_field++))
+    done
+
+    if ((saw_field > 0)); then
+      IFS=: read -rd '' state buffer < \
+        <(format.csv.__parse.fsm "$state" '' "$buffer")
+    fi
+  } 3>&1
+
+  return 0
+}
