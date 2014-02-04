@@ -94,7 +94,8 @@ http.percent-decode ()
 http.percent-encode () 
 { 
     : RFC3986;
-    typeset character position data=$1 LC_TYPE=C;
+    typeset character position data=$1;
+    typeset -x LC_TYPE=C;
     for ((position=0; position<${#data}; position++))
     do
         character=${data:position:1};

@@ -30,7 +30,7 @@ function ipv4.ip-to-dot {
   octet2=$(( (ipv4 >>  8) & 0xff))
   octet3=$(( (ipv4 >>  0) & 0xff))
 
-  printf '%u.%u.%u.%u' "$octet1" "$octet2" "$octet3" "$octet4"
+  printf '%u.%u.%u.%u' "$octet0" "$octet1" "$octet2" "$octet3"
 }
 
 

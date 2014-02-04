@@ -123,7 +123,7 @@ function __b7ab299a__load_bashly {
   read -ra places <<< "$BASHLY_PATH"
 
   for place in "${places[@]}"; do
-    for extension in "${bashly_extensions}"; do
+    for extension in "${bashly_extensions[@]}"; do
       [[ -r $place/$bashly.$extension ]] && {
         loaded_modules=("${!bashlies[@]}" "$bashly")
 

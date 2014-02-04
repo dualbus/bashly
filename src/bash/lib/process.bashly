@@ -10,7 +10,7 @@ function process.search {
   unset IFS
 
   while read -r pid comm; do
-    if [[ $comm = $name ]]; then
+    if [[ $comm = *"$name"* ]]; then
       printf '%s\n' "$pid"; return=0
     fi
   done < <(ps -e -o pid= -o comm=)
