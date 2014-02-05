@@ -3,6 +3,7 @@
 tests=\
 	array \
 	bytes \
+	date \
 	http \
 	process \
 	regex \

@@ -1,0 +1,74 @@
+#!/bin/bash
+
+
+function date.is-leap-year {
+  typeset year=$((10#$1))
+
+  ((year % 400)) || return 0
+  ((year % 100)) || return 1
+  ((year %   4)) || return 0
+                    return 1
+}
+
+
+function date.day-of-year {
+  typeset year=$((10#$1)) month=$((10#$2)) day=$((10#$3))
+  typeset offset offset_not_leap offset_leap
+
+  typeset -a month_to_day_of_year=(
+    [ 1]='1:1'      [ 2]='32:32'    [ 3]='60:61'
+    [ 4]='91:92'    [ 5]='121:122'  [ 6]='152:153'
+    [ 7]='182:183'  [ 8]='213:214'  [ 9]='244:245'
+    [10]='274:275'  [11]='305:306'  [12]='335:336'
+  )
+
+  IFS=: read -r offset_not_leap offset_leap \
+    <<< "${month_to_day_of_year[month]}"
+
+  if date.is-leap-year "$year"; then
+    offset=$offset_leap
+  else
+    offset=$offset_not_leap
+  fi
+
+  printf %u "$((offset + day - 1))"
+}
+
+
+function date.time-to-unix-seconds {
+  : <<EOD
+  Converts a UTC date to the number of seconds since the UNIX epoch,
+  which is 1970-01-01 00:00:00 UTC.
+
+  The formula was taken from the notes in this POSIX publication:
+
+    http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap04.html#tag_04_14
+
+  which reads:
+
+  | tm_sec + tm_min*60 + tm_hour*3600 + tm_yday*86400 +
+  |     (tm_year-70)*31536000 + ((tm_year-69)/4)*86400 -
+  |         ((tm_year-1)/100)*86400 + ((tm_year+299)/400)*86400
+
+  The tm_yday variable is the difference in days since January 1st,
+  so, tm_yday for January 1st is 0, for January 2nd is 1, and so on.
+  This is important, because the day-of-year returns January 1st as
+  1, so there's an offset of one.
+EOD
+
+  typeset year=$((10#$1)) month=$((10#$2)) day=$((10#$3))
+  typeset hour=$((10#$4)) minute=$((10#$5)) second=$((10#$6))
+  typeset year_adjusted year_day timestamp
+
+  year_adjusted=$((year - 1900))
+  year_day=$(date.day-of-year "$year" "$month" "$day")
+
+  ((timestamp  = second + minute*60 + hour*3600))
+  ((timestamp += (year_day-1)*86400 + (year_adjusted-70)*31536000))
+
+  ((timestamp += ((year_adjusted -  69)/  4)*86400))
+  ((timestamp -= ((year_adjusted -   1)/100)*86400))
+  ((timestamp += ((year_adjusted + 299)/400)*86400))
+
+  printf %u "$timestamp"
+}
