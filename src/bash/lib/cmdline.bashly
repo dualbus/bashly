@@ -1,19 +1,204 @@
-: <<EOF
-- name of argument
-- long form
-- short form
-- is required?
-- number of args
-- help string
-- metavar
+#!/bin/bash
 
-name=help:long=help:short=h:required=:arguments=0:help=show this help
 
-cmdline.arguments 
-EOF
+function cmdline.__arguments.short {
+  typeset argument=$1
+  typeset name i arguments
+
+  [[ $argument ]] || return 1
+
+  shift
+
+  {
+    typeset -p short_map || return 2
+    typeset -p arguments_map || return 2
+  } >/dev/null 2>&1
+
+  name=${short_map["${argument#-}"]}
+  arguments=${arguments_map["$name"]}
+
+  if ((arguments == 0)); then
+    printf '%s\0' "$name" >&3; return 0
+  elif ((arguments > $#)); then
+    return 3
+  fi
+  
+  for ((i = 1; i <= arguments; i++)); do
+    printf '%s %s\0' "$name" "${@:i:1}" >&3
+
+    shift
+  done
+
+  printf %s "$arguments"
+}
+
+
+function cmdline.__arguments.short-composed {
+  typeset argument=$1
+  typeset option remainder name arguments 
+
+  [[ $argument ]] || return 1
+
+  shift
+
+  {
+    typeset -p short_map || return 2
+    typeset -p arguments_map || return 2
+  } >/dev/null 2>&1
+
+  option=${argument#-} option=${option::1}
+  remainder=${argument#-?}
+  name=${short_map["$option"]}
+  arguments=${arguments_map["$name"]}
+
+  if ((arguments == 0)); then
+    printf '%s\0' "$name" >&3
+
+    if [[ $remainder ]]; then
+      cmdline.__arguments.short-composed "-$remainder" "$@" || return
+    fi
+  else
+    [[ $remainder ]] && set -- "$remainder" "$@"
+
+    cmdline.__arguments.short "-$option" "$@" || return
+  fi
+}
+
+
+function cmdline.__arguments.long {
+  typeset argument=$1
+  typeset name i arguments
+
+  [[ $argument ]] || return 1
+
+  shift
+
+  {
+    typeset -p long_map || return 2
+    typeset -p arguments_map || return 2
+  } >/dev/null 2>&1
+
+  name=${long_map["${argument#--}"]}
+  arguments=${arguments_map["$name"]}
+
+  if ((arguments == 0)); then
+    printf '%s\0' "$name" >&3; return 0
+  elif ((arguments > $#)); then
+    return 3
+  fi
+  
+  for ((i = 1; i <= arguments; i++)); do
+    printf '%s %s\0' "$name" "${@:i:1}" >&3
+
+    shift
+  done
+
+  printf %s "$arguments"
+}
+
 
 function cmdline.arguments {
-  : cmdline.arguments
+  : <<EOD
+  - name of argument
+  - long form
+  - short form
+  - is required?
+  - number of args
+  - help string
+  
+  name=help:long=help:short=h:required=:arguments=0:help=show this help
+  
+  cmdline.arguments 
+EOD
+
+
+  typeset option_description parameters key value shift argument
+  typeset long short required arguments help
+  typeset -a parameters
+  typeset -A long_map short_map required_map arguments_map help_map
+
+
+  shift=0
+
+  for option_description do
+    [[ $option_description = '--' ]] && break
+
+    ((shift++))
+
+    IFS=: read -ra parameters <<< "$option_description"
+
+    name= long= short= required= arguments=0 help=
+    for parameter in "${parameters[@]}"; do
+      IFS== read -r key value <<< "$parameter"
+
+      case $key in
+        name) name=$value;;
+        long) long=$value;;
+        short) short=$value;;
+        required) required=$value;;
+        arguments) arguments=$value;;
+        help) help=$value;;
+      esac
+
+      name=${name:-"$long"}
+      name=${name:-"$short"}
+
+      [[ $name ]] || return 1
+      
+      [[ $long ]]  && long_map["$long"]=$name
+      [[ $short ]] && short_map["$short"]=$name
+      required_map["$name"]=$required
+      arguments_map["$name"]=$arguments
+      help_map["$name"]=$help
+    done
+  done
+
+  shift "$shift"
+
+  if [[ $1 = '--' ]]; then
+    shift
+  else
+    return 2
+  fi
+
+  while (($# > 0)); do
+    argument=$1
+
+    case $argument in
+      -[!-])
+        {
+          shift=$(cmdline.__arguments.short "$@") || return 3;
+        } 3>&1
+        
+        shift "$((shift + 1))"
+        ;;
+
+      -[!-]*)
+        {
+          shift=$(cmdline.__arguments.short-composed "$@") || return 3;
+        } 3>&1
+
+        shift "$((shift + 1))"
+        ;;
+
+      --[!-]*)
+        if [[ $argument = --+([!=])=* ]]; then
+          IFS== read -rd '' key value <<< "$argument"
+
+          shift; set -- "$key" "${value%$'\n'}" "$@"
+        fi
+
+        {
+          shift=$(cmdline.__arguments.long "$@") || return j;
+        } 3>&1
+        
+        shift "$((shift + 1))"
+        ;;
+
+      *)
+        printf '@ %s\0' "$argument"; shift;;
+    esac
+  done
 }
 
 : cmdline.usage
