@@ -1,0 +1,33 @@
+#!/bin/bash
+
+:load cmdline
+
+
+function r {
+  typeset shift result
+
+  shift=$("$@" 3>/dev/null)
+  result=$("$@" 3>&1 >/dev/null | od -t x1 -An -v | tr -d '[:space:]')
+
+  printf '%u:%s' "$shift" "$result"
+}
+
+
+function test {
+  typeset -A short_map
+  typeset -A arguments_map
+
+
+  short_map=(['x']=x) arguments_map=(['x']=1)
+  [[ $(r cmdline.__arguments.short -x a) = '1:78206100' ]] || return 1
+
+  : 'missing arguments'
+  short_map=(['x']=x) arguments_map=(['x']=2)
+  cmdline.__arguments.short -x a >/dev/null 3>&1
+  (($? == 1)) || return 1
+
+
+  return 0
+}
+
+test

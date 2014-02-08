@@ -1,0 +1,160 @@
+#!/bin/bash
+
+#ulimit -u 100
+#ulimit -d 100000 -m 100000 -v 100000
+#
+#FUNCNEST=1000
+
+function scheme.add {
+  typeset arg acc=0
+
+  for arg do ((acc += arg)); done
+
+  printf %s "$acc"
+}
+
+
+function scheme.substract {
+  typeset arg acc=$1
+
+  shift
+
+  for arg do ((acc -= arg)); done
+
+  printf %s "$acc"
+}
+
+function scheme.lambda {
+  echo "$@"
+}
+
+function scheme.__lambda.consume {
+  typeset open current_token
+
+  [[ $1 = '(' && $2 = 'lambda' && $3 = '(' ]] || return 1
+
+  shift 3; current_token=3
+
+  while (($#)) && [[ $1 != ')' ]]; do
+
+    shift; ((current_token++))
+  done
+
+  [[ $1 = ')' && $2 = '(' ]] || return 1
+
+  shift 2; ((current_token += 2))
+
+  open=1
+
+  while (($# && open)); do
+    case $1 in
+      '(') ((open++));;
+      ')') ((open--));;
+    esac
+
+    shift; ((current_token++))
+  done
+
+  [[ $1 = ')' ]] || return 1
+
+  printf %u "$((current_token + 1))"
+}
+
+
+function scheme.dispatch {
+  typeset operator=$1
+  typeset -A operator_table=(
+    ['+']=scheme.add
+    ['-']=scheme.substract
+    ['lambda']=scheme.lambda
+  )
+  
+  shift
+
+  "${operator_table["$operator"]}" "$@"
+}
+
+
+function scheme.__evaluate.recurse {
+  typeset -a operands
+  typeset operator current_token shift value IFS
+
+  case $1 in
+    '(')
+      case $2 in
+        lambda)
+          shift=$(scheme.__lambda.consume "$@")
+
+          unset IFS; value="${*:1:shift}"
+
+          printf '%u:%s' "$((current_token + shift))" \
+            "$value"
+
+          return 0
+          ;;
+
+        ')')
+          return 2
+          ;;
+
+        '')
+          return 1
+          ;;
+
+        *)
+          operator=$2
+          shift 2; ((current_token += 2))
+
+          while (($#)); do
+            case $1 in
+              '(')
+                IFS=: read -rd '' shift value < \
+                  <(scheme.__evaluate.recurse "$@")
+
+                operands+=("$value")
+
+                shift "$((shift))"
+
+                ((current_token += shift))
+                ;;
+
+              ')')
+                printf '%u:%s' "$((current_token + 1))" \
+                  "$(scheme.dispatch "$operator" "${operands[@]}")"
+
+                return 0
+                ;;
+
+              *)
+                operands+=("$1")
+                shift; ((current_token++))
+                ;;
+            esac
+          done
+          ;;
+      esac
+      ;;
+
+    *)
+      ;;
+  esac
+
+  return 1
+}
+
+
+function scheme.evaluate {
+  typeset value shift
+
+  while (($#)); do
+    IFS=: read -r shift value < <(scheme.__evaluate.recurse "$@")
+
+    printf %s "$value"
+
+    shift "$((shift))"
+  done
+}
+
+#echo "$(scheme.evaluate \( + 5 \( - 2 \( + 2 20 \) 2 \) \))"
+#echo "$(scheme.evaluate \( lambda \( x y \) \( + y x \) \))"
+#echo "$(scheme.evaluate \( + 2 \) \( + 2 \))"

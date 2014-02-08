@@ -3,6 +3,7 @@
 tests=\
 	array \
 	bytes \
+	cmdline \
 	date \
 	http \
 	process \
