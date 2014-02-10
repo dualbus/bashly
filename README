@@ -2,7 +2,7 @@ bashly
 ======
 
 This project, bashly, is yet another attempt of a library of reusable
-bash functions. Though, its development is driven by the following
+bash functions. Though its development is driven by the following
 core principles:
 
 - Encapsulate all state within the functions (no global variables)
