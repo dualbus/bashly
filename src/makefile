@@ -1,7 +1,9 @@
 .POSIX:
 
 bin=\
-		dpaste.cbash
+	dpaste.cbash \
+	echo.cbash \
+	gcat.cbash
 
 bindir=../bin
 

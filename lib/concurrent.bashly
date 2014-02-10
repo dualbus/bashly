@@ -1,1 +1,5 @@
 : concurrent.lock
+
+function concurrent.lock {
+  :
+}

@@ -1,0 +1,14 @@
+- Implement JSON parser
+- Implement color handling
+- Implement MD5/SHA1 (native and with od)
+- Implement Base64 encoding (native and with od)
+- Add arbitrary header support to the HTTP functions
+- Implement XML parser
+- Implement INI parser
+- Implement stronger random generator
+- Implement mustache templating
+- Implement file editing features (delete line, add line, replace
+  line)
+- Implement library to send mail from bash (using /dev/tcp)
+- "Is valid IPv4 address?" function
+- Interpret -- in cmdline.arguments

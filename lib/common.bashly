@@ -1,11 +1,11 @@
 #!/bin/bash
 
+:load log
+
 function common.die {
-  typeset arg
+  typeset exit_status=$2
 
-  for arg; do
-    printf '%s: %s\n' "$BASH_SOURCE" "$arg" >&2
-  done
+  log.error "$1"
 
-  exit 1
+  exit "${exit_status:-1}"
 }

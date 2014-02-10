@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 # The interface for returning arrays:
 #
 # Output a NUL delimited list of elements. I'm sorry, but that's the
@@ -22,9 +21,39 @@ function array.has-element {
 }
 
 
+
+function array.__compare.numeric {
+  (($1 < $2))
+}
+
+
+function array.__compare.lexicographic {
+  [[ $1 < "$2" ]]
+}
+
+
+function array.__sort.bubble {
+  :
+
+  typeset comparison=$1; shift
+  typeset -a array=("$@")
+  typeset length=$# i j temporary
+
+  for ((i = 0; i < length; i++)); do
+    for ((j = i; j < length; j++)); do
+      if "$comparison" "${array[i]}" "${array[j]}"; then
+        :
+      fi
+    done
+  done
+
+}
+
+
 function array.sort {
   : array.sort
-  
+
+  typeset -a array=("$@")
 }
 
 

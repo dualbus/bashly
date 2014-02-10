@@ -1,0 +1,93 @@
+cmdline -- command line argument parsing
+========================================
+
+Even when command line argument parsing is one of the most common
+tasks of shell scripts (at least, medium to large scripts), the
+features offered by bash are really limited (i.e. getopts). There's
+also the getopt tool, which is an external binary, and it's also
+limited.
+
+Rationale
+---------
+
+(skip this if you just want to know how to use the module)
+
+Wooledge's BashFAQ makes an awesome attempt of removing the
+complexity of parsing command line options, detailed here:
+
+http://mywiki.wooledge.org/BashFAQ/035
+
+(it also explains the short comings of getopts, which can't handle
+the really common long options, and of getopt, which according to
+that FAQ, cannot handle arguments with embedded whitespace, and empty
+arguments).
+
+I found some interesting ready-to-use alternatives, which claim to do
+advanced option parsing, making the life of the developer easy, which
+are:
+
+- process-getopt, by bhepple: http://sourceforge.net/projects/process-getopt/
+- shellOptions, by davvil: https://github.com/davvil/shellOptions
+- bash-argsparse, by Anvil: https://github.com/Anvil/bash-argsparse
+
+I must confess I have not used them extensively to determine if
+they're really that easy to use/robust. Though I've looked at their
+documentation, and I have the following opinions:
+
+
+  
+- process-getopt:
+
+  
+  
+- bash-argsparse:
+
+  > # Load argsparse library.
+  > . argsparse.sh
+  > 
+  > # Declaring an option not accepting a value and not having a
+  > # single-char equivalent.
+  > argsparse_use_option option1 "An option."
+  > 
+  > # Declaring an option not accepting a value but with a single-char
+  > # equivalent.
+  > 
+  > # "short" is a property, and "o" is the value of the "short" property
+  > # for this option. Argsparse can handle other properties, see other
+  > # tutorials.
+  > argsparse_use_option option2 "Another option." short:o 
+
+  This seems to have many features, and a clean interface, similar to
+  shellOptions. And like shellOptions, it uses global variables to
+  store the option-parsing-related data. So, the same criticism
+  applies, namely, that it's difficult to use this more than once
+  inside the same script (without resorting to subshells, or other
+  tricks). Other than that it seems fine, and well tested.
+
+  I also like the fact that it comes with some common validation code
+  included, so you don't have to reinvent the wheel to validate
+  numbers, files, addresses, and so on.
+
+
+- shellOptions:
+
+  > This is a small library for handling command line options in bash and zsh. It is
+  > inspired by the optparse python library. An example usage is
+  > 
+  >     addOption -n --number required help="Specify some number" dest=myNumber
+  >     addOption -a --aux flagTrue help="Another option, but without dest"
+  >     addOption -o help="Option with default" default="a b" dest=otherO
+  >     parseOptions "$@"
+
+  The interface is really clear and feature full. It reminds me of
+  Python's argparse . The only issue I have with it is that it
+  appears to use global variables to handle the options (e.g.
+  __longOptions__, __shortOptions__, and the rest). So, for simple
+  scripts, which just have one argument parsing phase it's ok, as
+  long as they do not accidentally touch the global variables, but if
+  you want to reuse this functionality inside your own functions, or
+  more than once in a script, it's not apparent how to resolve this.
+
+  Other than that, it seems like a good piece of software (it would
+  be better if it included some tests).
+

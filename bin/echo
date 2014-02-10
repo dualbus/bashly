@@ -1,0 +1,314 @@
+#!/usr/bin/env bash
+cmdline.__arguments.long () 
+{ 
+    typeset argument=$1;
+    typeset name i arguments;
+    [[ -n $argument ]] || return 1;
+    shift;
+    { 
+        typeset -p long_map || return 2;
+        typeset -p arguments_map || return 2
+    } > /dev/null 2>&1;
+    name=${long_map["${argument#--}"]};
+    [[ -n $name ]] || { 
+        printf -- '- %s\0' "$argument" 1>&3;
+        return 3
+    };
+    arguments=${arguments_map["$name"]};
+    if ((arguments == 0)); then
+        printf '%s\0' "$name" 1>&3;
+        return 0;
+    else
+        if ((arguments > $#)); then
+            return 4;
+        fi;
+    fi;
+    for ((i = 1; i <= arguments; i++))
+    do
+        printf '%s %s\0' "$name" "${@:i:1}" 1>&3;
+        shift;
+    done;
+    printf %s "$arguments"
+}
+cmdline.__arguments.short () 
+{ 
+    typeset argument=$1;
+    typeset name i arguments;
+    [[ -n $argument ]] || return 1;
+    shift;
+    { 
+        typeset -p short_map || return 2;
+        typeset -p arguments_map || return 2
+    } > /dev/null 2>&1;
+    name=${short_map["${argument#-}"]};
+    [[ -n $name ]] || { 
+        printf -- '- %s\0' "$argument" 1>&3;
+        return 3
+    };
+    arguments=${arguments_map["$name"]};
+    if ((arguments == 0)); then
+        printf '%s\0' "$name" 1>&3;
+        return 0;
+    else
+        if ((arguments > $#)); then
+            return 4;
+        fi;
+    fi;
+    for ((i = 1; i <= arguments; i++))
+    do
+        printf '%s %s\0' "$name" "${@:i:1}" 1>&3;
+        shift;
+    done;
+    printf %s "$arguments"
+}
+cmdline.__arguments.short-composed () 
+{ 
+    typeset argument=$1;
+    typeset option remainder name arguments;
+    [[ -n $argument ]] || return 1;
+    shift;
+    { 
+        typeset -p short_map || return 2;
+        typeset -p arguments_map || return 2
+    } > /dev/null 2>&1;
+    option=${argument#-} option=${option::1};
+    remainder=${argument#-?};
+    name=${short_map["$option"]};
+    [[ -n $name ]] || { 
+        printf -- '- %s\0' "$argument" 1>&3;
+        return 3
+    };
+    arguments=${arguments_map["$name"]};
+    if ((arguments == 0)); then
+        printf '%s\0' "$name" 1>&3;
+        if [[ -n $remainder ]]; then
+            cmdline.__arguments.short-composed "-$remainder" "$@" || return;
+        fi;
+    else
+        [[ -n $remainder ]] && set -- "$remainder" "$@";
+        cmdline.__arguments.short "-$option" "$@" || return;
+    fi
+}
+cmdline.arguments () 
+{ 
+    :  <<EOD
+  - name of argument
+  - long form
+  - short form
+  - is required?
+  - number of args
+  - help string
+  
+  name=help:long=help:short=h:required=:arguments=0:help=show this help
+  
+  cmdline.arguments 
+
+  env vars:
+
+  - errors_not_fatal
+  - dashdash_not_special
+EOD
+
+    typeset option_description parameters key value shift argument
+    typeset long short required arguments help stop_parsing return_code;
+    typeset -a parameters;
+    typeset -A long_map short_map required_map arguments_map help_map;
+    shift=0;
+    for option_description in "$@";
+    do
+        [[ $option_description = '--' ]] && break;
+        ((shift++));
+        IFS=: read -ra parameters <<< "$option_description";
+        name= long= short= required= arguments=0 help=;
+        for parameter in "${parameters[@]}";
+        do
+            IFS== read -r key value <<< "$parameter";
+            case $key in 
+                name)
+                    name=$value
+                ;;
+                long)
+                    long=$value
+                ;;
+                short)
+                    short=$value
+                ;;
+                required)
+                    required=$value
+                ;;
+                arguments)
+                    arguments=$value
+                ;;
+                help)
+                    help=$value
+                ;;
+            esac;
+            name=${name:-"$long"};
+            name=${name:-"$short"};
+            [[ -n $name ]] || return 1;
+            [[ -n $long ]] && long_map["$long"]=$name;
+            [[ -n $short ]] && short_map["$short"]=$name;
+            required_map["$name"]=$required;
+            arguments_map["$name"]=$arguments;
+            help_map["$name"]=$help;
+        done;
+    done;
+    shift "$shift";
+    if [[ $1 = '--' ]]; then
+        shift;
+    else
+        return 2;
+    fi;
+    while (($# > 0)); do
+        argument=$1;
+        if [[ -n $stop_parsing ]]; then
+            printf '@ %s\0' "$argument";
+            shift;
+            continue;
+        fi;
+        case $argument in 
+            -[!-])
+                { 
+                    shift=$(cmdline.__arguments.short "$@") || { 
+                        return_code=$?;
+                        [[ -n $errors_not_fatal ]] || return "$return_code"
+                    }
+                } 3>&1;
+                shift "$((shift + 1))"
+            ;;
+            -[!-]*)
+                { 
+                    shift=$(cmdline.__arguments.short-composed "$@") || { 
+                        return_code=$?;
+                        [[ -n $errors_not_fatal ]] || return "$return_code"
+                    }
+                } 3>&1;
+                shift "$((shift + 1))"
+            ;;
+            --[!-]*)
+                if [[ $argument = --+([!=])=* ]]; then
+                    IFS== read -rd '' key value <<< "$argument";
+                    shift;
+                    set -- "$key" "${value%
+}" "$@";
+                fi;
+                { 
+                    shift=$(cmdline.__arguments.long "$@") || { 
+                        return_code=$?;
+                        [[ -n $errors_not_fatal ]] || return "$return_code"
+                    }
+                } 3>&1;
+                shift "$((shift + 1))"
+            ;;
+            --)
+                if [[ -n $dashdash_not_special ]]; then
+                    printf '@ %s\0' "$argument";
+                else
+                    stop_parsing=y;
+                fi;
+                shift
+            ;;
+            *)
+                printf '@ %s\0' "$argument";
+                shift
+            ;;
+        esac;
+    done
+}
+cmdline.help () 
+{ 
+    typeset option_description name long short required arguments help;
+    typeset key value parameter;
+    typeset -a parameters;
+    for option_description in "$@";
+    do
+        [[ $option_description = '--' ]] && break;
+        IFS=: read -ra parameters <<< "$option_description";
+        name= long= short= required= arguments=0 help=;
+        for parameter in "${parameters[@]}";
+        do
+            IFS== read -r key value <<< "$parameter";
+            case $key in 
+                name)
+                    name=$value
+                ;;
+                long)
+                    long=$value
+                ;;
+                short)
+                    short=$value
+                ;;
+                required)
+                    required=$value
+                ;;
+                arguments)
+                    arguments=$value
+                ;;
+                help)
+                    help=$value
+                ;;
+            esac;
+            name=${name:-"$long"};
+            name=${name:-"$short"};
+            [[ -n $name ]] || return 1;
+        done;
+        if [[ -n $short && -n $long ]]; then
+            printf '\t-%s, --%s\n\t\t%s\n' "$short" "$long" "$help";
+        else
+            if [[ -n $short ]]; then
+                printf '\t-%s\n\t\t%s\n' "$short" "$help";
+            else
+                if [[ -n $long ]]; then
+                    printf '\t--%s\n\t\t%s\n' "$long" "$help";
+                else
+                    :;
+                fi;
+            fi;
+        fi;
+    done
+}
+
+main () 
+{ 
+    :  <<EOD
+  I tried hard to duplicate the brain-dead argument parsing of the
+  echo builtin, but it's still not an accurate clone. It parses
+  arguments even after arguments.
+EOD
+
+    typeset IFS separator no_trailing_newline interpret_backslashes
+    typeset type value argument;
+    typeset -a options=('name=no_trailing_newline:short=n' 'name=interpret_backslashes:short=e' 'name=no_interpret_backslashes:short=E');
+    typeset -a arguments;
+    errors_not_fatal=y dashdash_not_special=y cmdline.arguments "${options[@]}" -- "$@" | { 
+        while read -rd '' type value; do
+            case $type in 
+                @ | -)
+                    arguments+=("$separator$value");
+                    separator=' '
+                ;;
+                no_trailing_newline)
+                    no_trailing_newline=y
+                ;;
+                interpret_backslashes)
+                    interpret_backslashes=y
+                ;;
+                no_interpret_backslashes)
+                    interpret_backslashes=
+                ;;
+            esac;
+        done;
+        for argument in "${arguments[@]}";
+        do
+            if [[ -n $interpret_backslashes ]]; then
+                printf %b "$argument";
+            else
+                printf %s "$argument";
+            fi;
+        done;
+        if [[ ! -n $no_trailing_newline ]]; then
+            printf \\n;
+        fi
+    }
+}
+main "$@"

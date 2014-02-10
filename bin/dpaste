@@ -1,12 +1,47 @@
 #!/usr/bin/env bash
+log.basic () 
+{ 
+    typeset argument;
+    for argument in "$@";
+    do
+        printf '%s: %s\n' "${BASH_SOURCE##*/}" "$argument";
+    done
+}
+log.debug () 
+{ 
+    typeset debug_level log_level;
+    shift 2;
+    if ((log_level >= debug_level)); then
+        log.with-type DEBUG "$@";
+    fi
+}
+log.error () 
+{ 
+    log.with-type ERROR "$@"
+}
+log.info () 
+{ 
+    log.with-type INFO "$@"
+}
+log.warning () 
+{ 
+    log.with-type WARNING "$@"
+}
+log.with-type () 
+{ 
+    typeset type=$1 argument;
+    shift;
+    for argument in "$@";
+    do
+        log.basic "$type: $argument" 1>&2;
+    done
+}
+
 common.die () 
 { 
-    typeset arg;
-    for arg in "$@";
-    do
-        printf '%s: %s\n' "$BASH_SOURCE" "$arg" 1>&2;
-    done;
-    exit 1
+    typeset exit_status=$2;
+    log.error "$1";
+    exit "${exit_status:-1}"
 }
 
 bytes.chr () 

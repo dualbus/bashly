@@ -1,0 +1,43 @@
+#!/bin/bash
+
+
+function log.basic {
+  typeset argument
+
+  for argument do
+    printf '%s: %s\n' "${BASH_SOURCE##*/}" "$argument"
+  done
+}
+
+
+function log.with-type {
+  typeset type=$1 argument; shift
+
+  for argument do
+    log.basic "$type: $argument" >&2
+  done
+}
+
+
+function log.info {
+  log.with-type INFO "$@"
+}
+
+
+function log.warning {
+  log.with-type WARNING "$@"
+}
+
+
+function log.error {
+  log.with-type ERROR "$@"
+}
+
+
+function log.debug {
+  typeset debug_level log_level; shift 2
+
+  if ((log_level >= debug_level)); then
+    log.with-type DEBUG "$@"
+  fi
+}

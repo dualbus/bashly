@@ -1,0 +1,5 @@
+Returning arrays from functions
+===============================
+
+Since bash has no concept of pointers, there's actually no sane way
+of returning arrays from functions.

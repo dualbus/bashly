@@ -15,12 +15,18 @@ function cmdline.__arguments.short {
   } >/dev/null 2>&1
 
   name=${short_map["${argument#-}"]}
+
+  [[ $name ]] || {
+    printf -- '- %s\0' "$argument" >&3
+    return 3
+  }
+
   arguments=${arguments_map["$name"]}
 
   if ((arguments == 0)); then
     printf '%s\0' "$name" >&3; return 0
   elif ((arguments > $#)); then
-    return 3
+    return 4
   fi
   
   for ((i = 1; i <= arguments; i++)); do
@@ -49,6 +55,12 @@ function cmdline.__arguments.short-composed {
   option=${argument#-} option=${option::1}
   remainder=${argument#-?}
   name=${short_map["$option"]}
+
+  [[ $name ]] || {
+    printf -- '- %s\0' "$argument" >&3
+    return 3
+  }
+
   arguments=${arguments_map["$name"]}
 
   if ((arguments == 0)); then
@@ -79,12 +91,18 @@ function cmdline.__arguments.long {
   } >/dev/null 2>&1
 
   name=${long_map["${argument#--}"]}
+
+  [[ $name ]] || {
+    printf -- '- %s\0' "$argument" >&3
+    return 3
+  }
+
   arguments=${arguments_map["$name"]}
 
   if ((arguments == 0)); then
     printf '%s\0' "$name" >&3; return 0
   elif ((arguments > $#)); then
-    return 3
+    return 4
   fi
   
   for ((i = 1; i <= arguments; i++)); do
@@ -109,11 +127,16 @@ function cmdline.arguments {
   name=help:long=help:short=h:required=:arguments=0:help=show this help
   
   cmdline.arguments 
+
+  env vars:
+
+  - errors_not_fatal
+  - dashdash_not_special
 EOD
 
 
   typeset option_description parameters key value shift argument
-  typeset long short required arguments help
+  typeset long short required arguments help stop_parsing return_code
   typeset -a parameters
   typeset -A long_map short_map required_map arguments_map help_map
 
@@ -164,10 +187,18 @@ EOD
   while (($# > 0)); do
     argument=$1
 
+    if [[ $stop_parsing ]]; then
+        printf '@ %s\0' "$argument"; shift; continue;
+    fi
+
     case $argument in
       -[!-])
         {
-          shift=$(cmdline.__arguments.short "$@") || return 3;
+          shift=$(cmdline.__arguments.short "$@") || {
+            return_code=$?
+
+            [[ $errors_not_fatal ]] || return "$return_code";
+          }
         } 3>&1
         
         shift "$((shift + 1))"
@@ -175,7 +206,11 @@ EOD
 
       -[!-]*)
         {
-          shift=$(cmdline.__arguments.short-composed "$@") || return 3;
+          shift=$(cmdline.__arguments.short-composed "$@") || {
+            return_code=$?
+
+            [[ $errors_not_fatal ]] || return "$return_code";
+          }
         } 3>&1
 
         shift "$((shift + 1))"
@@ -189,10 +224,24 @@ EOD
         fi
 
         {
-          shift=$(cmdline.__arguments.long "$@") || return j;
+          shift=$(cmdline.__arguments.long "$@") || {
+            return_code=$?
+
+            [[ $errors_not_fatal ]] || return "$return_code";
+          }
         } 3>&1
         
         shift "$((shift + 1))"
+        ;;
+
+      --)
+        if [[ $dashdash_not_special ]]; then
+          printf '@ %s\0' "$argument";
+        else
+          stop_parsing=y
+        fi
+
+        shift
         ;;
 
       *)
@@ -202,4 +251,45 @@ EOD
 }
 
 : cmdline.usage
+
 : cmdline.help
+function cmdline.help {
+  typeset option_description name long short required arguments help
+  typeset key value parameter
+  typeset -a parameters
+
+  for option_description do
+    [[ $option_description = '--' ]] && break
+
+    IFS=: read -ra parameters <<< "$option_description"
+
+    name= long= short= required= arguments=0 help=
+    for parameter in "${parameters[@]}"; do
+      IFS== read -r key value <<< "$parameter"
+
+      case $key in
+        name) name=$value;;
+        long) long=$value;;
+        short) short=$value;;
+        required) required=$value;;
+        arguments) arguments=$value;;
+        help) help=$value;;
+      esac
+
+      name=${name:-"$long"}
+      name=${name:-"$short"}
+
+      [[ $name ]] || return 1
+    done
+
+    if [[ $short && $long ]]; then
+      printf '\t-%s, --%s\n\t\t%s\n' "$short" "$long" "$help"
+    elif [[ $short ]]; then
+      printf '\t-%s\n\t\t%s\n' "$short" "$help"
+    elif [[ $long ]]; then
+      printf '\t--%s\n\t\t%s\n' "$long" "$help"
+    else
+      :
+    fi
+  done
+}

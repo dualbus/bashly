@@ -1,0 +1,456 @@
+#!/usr/bin/env bash
+log.basic () 
+{ 
+    typeset argument;
+    for argument in "$@";
+    do
+        printf '%s: %s\n' "${BASH_SOURCE##*/}" "$argument";
+    done
+}
+log.debug () 
+{ 
+    typeset debug_level log_level;
+    shift 2;
+    if ((log_level >= debug_level)); then
+        log.with-type DEBUG "$@";
+    fi
+}
+log.error () 
+{ 
+    log.with-type ERROR "$@"
+}
+log.info () 
+{ 
+    log.with-type INFO "$@"
+}
+log.warning () 
+{ 
+    log.with-type WARNING "$@"
+}
+log.with-type () 
+{ 
+    typeset type=$1 argument;
+    shift;
+    for argument in "$@";
+    do
+        log.basic "$type: $argument" 1>&2;
+    done
+}
+
+common.die () 
+{ 
+    typeset exit_status=$2;
+    log.error "$1";
+    exit "${exit_status:-1}"
+}
+
+cmdline.__arguments.long () 
+{ 
+    typeset argument=$1;
+    typeset name i arguments;
+    [[ -n $argument ]] || return 1;
+    shift;
+    { 
+        typeset -p long_map || return 2;
+        typeset -p arguments_map || return 2
+    } > /dev/null 2>&1;
+    name=${long_map["${argument#--}"]};
+    [[ -n $name ]] || { 
+        printf -- '- %s\0' "$argument" 1>&3;
+        return 3
+    };
+    arguments=${arguments_map["$name"]};
+    if ((arguments == 0)); then
+        printf '%s\0' "$name" 1>&3;
+        return 0;
+    else
+        if ((arguments > $#)); then
+            return 4;
+        fi;
+    fi;
+    for ((i = 1; i <= arguments; i++))
+    do
+        printf '%s %s\0' "$name" "${@:i:1}" 1>&3;
+        shift;
+    done;
+    printf %s "$arguments"
+}
+cmdline.__arguments.short () 
+{ 
+    typeset argument=$1;
+    typeset name i arguments;
+    [[ -n $argument ]] || return 1;
+    shift;
+    { 
+        typeset -p short_map || return 2;
+        typeset -p arguments_map || return 2
+    } > /dev/null 2>&1;
+    name=${short_map["${argument#-}"]};
+    [[ -n $name ]] || { 
+        printf -- '- %s\0' "$argument" 1>&3;
+        return 3
+    };
+    arguments=${arguments_map["$name"]};
+    if ((arguments == 0)); then
+        printf '%s\0' "$name" 1>&3;
+        return 0;
+    else
+        if ((arguments > $#)); then
+            return 4;
+        fi;
+    fi;
+    for ((i = 1; i <= arguments; i++))
+    do
+        printf '%s %s\0' "$name" "${@:i:1}" 1>&3;
+        shift;
+    done;
+    printf %s "$arguments"
+}
+cmdline.__arguments.short-composed () 
+{ 
+    typeset argument=$1;
+    typeset option remainder name arguments;
+    [[ -n $argument ]] || return 1;
+    shift;
+    { 
+        typeset -p short_map || return 2;
+        typeset -p arguments_map || return 2
+    } > /dev/null 2>&1;
+    option=${argument#-} option=${option::1};
+    remainder=${argument#-?};
+    name=${short_map["$option"]};
+    [[ -n $name ]] || { 
+        printf -- '- %s\0' "$argument" 1>&3;
+        return 3
+    };
+    arguments=${arguments_map["$name"]};
+    if ((arguments == 0)); then
+        printf '%s\0' "$name" 1>&3;
+        if [[ -n $remainder ]]; then
+            cmdline.__arguments.short-composed "-$remainder" "$@" || return;
+        fi;
+    else
+        [[ -n $remainder ]] && set -- "$remainder" "$@";
+        cmdline.__arguments.short "-$option" "$@" || return;
+    fi
+}
+cmdline.arguments () 
+{ 
+    :  <<EOD
+  - name of argument
+  - long form
+  - short form
+  - is required?
+  - number of args
+  - help string
+  
+  name=help:long=help:short=h:required=:arguments=0:help=show this help
+  
+  cmdline.arguments 
+
+  env vars:
+
+  - errors_not_fatal
+  - dashdash_not_special
+EOD
+
+    typeset option_description parameters key value shift argument
+    typeset long short required arguments help stop_parsing return_code;
+    typeset -a parameters;
+    typeset -A long_map short_map required_map arguments_map help_map;
+    shift=0;
+    for option_description in "$@";
+    do
+        [[ $option_description = '--' ]] && break;
+        ((shift++));
+        IFS=: read -ra parameters <<< "$option_description";
+        name= long= short= required= arguments=0 help=;
+        for parameter in "${parameters[@]}";
+        do
+            IFS== read -r key value <<< "$parameter";
+            case $key in 
+                name)
+                    name=$value
+                ;;
+                long)
+                    long=$value
+                ;;
+                short)
+                    short=$value
+                ;;
+                required)
+                    required=$value
+                ;;
+                arguments)
+                    arguments=$value
+                ;;
+                help)
+                    help=$value
+                ;;
+            esac;
+            name=${name:-"$long"};
+            name=${name:-"$short"};
+            [[ -n $name ]] || return 1;
+            [[ -n $long ]] && long_map["$long"]=$name;
+            [[ -n $short ]] && short_map["$short"]=$name;
+            required_map["$name"]=$required;
+            arguments_map["$name"]=$arguments;
+            help_map["$name"]=$help;
+        done;
+    done;
+    shift "$shift";
+    if [[ $1 = '--' ]]; then
+        shift;
+    else
+        return 2;
+    fi;
+    while (($# > 0)); do
+        argument=$1;
+        if [[ -n $stop_parsing ]]; then
+            printf '@ %s\0' "$argument";
+            shift;
+            continue;
+        fi;
+        case $argument in 
+            -[!-])
+                { 
+                    shift=$(cmdline.__arguments.short "$@") || { 
+                        return_code=$?;
+                        [[ -n $errors_not_fatal ]] || return "$return_code"
+                    }
+                } 3>&1;
+                shift "$((shift + 1))"
+            ;;
+            -[!-]*)
+                { 
+                    shift=$(cmdline.__arguments.short-composed "$@") || { 
+                        return_code=$?;
+                        [[ -n $errors_not_fatal ]] || return "$return_code"
+                    }
+                } 3>&1;
+                shift "$((shift + 1))"
+            ;;
+            --[!-]*)
+                if [[ $argument = --+([!=])=* ]]; then
+                    IFS== read -rd '' key value <<< "$argument";
+                    shift;
+                    set -- "$key" "${value%
+}" "$@";
+                fi;
+                { 
+                    shift=$(cmdline.__arguments.long "$@") || { 
+                        return_code=$?;
+                        [[ -n $errors_not_fatal ]] || return "$return_code"
+                    }
+                } 3>&1;
+                shift "$((shift + 1))"
+            ;;
+            --)
+                if [[ -n $dashdash_not_special ]]; then
+                    printf '@ %s\0' "$argument";
+                else
+                    stop_parsing=y;
+                fi;
+                shift
+            ;;
+            *)
+                printf '@ %s\0' "$argument";
+                shift
+            ;;
+        esac;
+    done
+}
+cmdline.help () 
+{ 
+    typeset option_description name long short required arguments help;
+    typeset key value parameter;
+    typeset -a parameters;
+    for option_description in "$@";
+    do
+        [[ $option_description = '--' ]] && break;
+        IFS=: read -ra parameters <<< "$option_description";
+        name= long= short= required= arguments=0 help=;
+        for parameter in "${parameters[@]}";
+        do
+            IFS== read -r key value <<< "$parameter";
+            case $key in 
+                name)
+                    name=$value
+                ;;
+                long)
+                    long=$value
+                ;;
+                short)
+                    short=$value
+                ;;
+                required)
+                    required=$value
+                ;;
+                arguments)
+                    arguments=$value
+                ;;
+                help)
+                    help=$value
+                ;;
+            esac;
+            name=${name:-"$long"};
+            name=${name:-"$short"};
+            [[ -n $name ]] || return 1;
+        done;
+        if [[ -n $short && -n $long ]]; then
+            printf '\t-%s, --%s\n\t\t%s\n' "$short" "$long" "$help";
+        else
+            if [[ -n $short ]]; then
+                printf '\t-%s\n\t\t%s\n' "$short" "$help";
+            else
+                if [[ -n $long ]]; then
+                    printf '\t--%s\n\t\t%s\n' "$long" "$help";
+                else
+                    :;
+                fi;
+            fi;
+        fi;
+    done
+}
+
+emit-line () 
+{ 
+    typeset line_number=$1 line=$2;
+    typeset LC_CTYPE=C;
+    : trailing_newline;
+    : opt_number_nonblank opt_show_ends opt_number;
+    : opt_squeeze_blank opt_show_tabs opt_show_nonprinting;
+    if [[ -n $opt_show_tabs ]]; then
+        line=${line//'	'/^I};
+    fi;
+    if [[ -n $opt_show_nonprinting ]]; then
+        IFS= read -r line < <(escape-line "$line");
+    fi;
+    if [[ -n $opt_number ]]; then
+        printf '% 6d\t%s' "$line_number" "$line";
+    else
+        if [[ -n $opt_number_nonblank && -n $line ]]; then
+            printf '% 6d\t%s' "$line_number" "$line";
+        else
+            if [[ -n $opt_number_nonblank ]]; then
+                :;
+            else
+                printf '%s' "$line";
+            fi;
+        fi;
+    fi;
+    if [[ -n $opt_show_ends ]]; then
+        printf '$';
+    fi;
+    if [[ -n $trailing_newline || -n $opt_show_ends ]]; then
+        printf '\n';
+    fi
+}
+escape-line () 
+{ 
+    typeset line=$1;
+    typeset i character escaped_line;
+    typeset -A replacements=(['']='^A' ['']='^B' ['']='^C' ['']='^D' ['']='^E' ['']='^F' ['']='^G' ['']='^H' ['	']='^I' ['']='^K' ['']='^L' ['']='^M' ['']='^N' ['']='^O' ['']='^P' ['']='^Q' ['']='^R' ['']='^S' ['']='^T' ['']='^U' ['']='^V' ['']='^W' ['']='^X' ['']='^Y' ['']='^Z' ['']='^[' ['']='^\' ['']='^]' ['']='^^' ['']='^_' ['']='^?' ['€']='M-^@' ['']='M-^A' ['‚']='M-^B' ['ƒ']='M-^C' ['„']='M-^D' ['…']='M-^E' ['†']='M-^F' ['‡']='M-^G' ['ˆ']='M-^H' ['‰']='M-^I' ['Š']='M-^J' ['‹']='M-^K' ['Œ']='M-^L' ['']='M-^M' ['Ž']='M-^N' ['']='M-^O' ['']='M-^P' ['‘']='M-^Q' ['’']='M-^R' ['“']='M-^S' ['”']='M-^T' ['•']='M-^U' ['–']='M-^V' ['—']='M-^W' ['˜']='M-^X' ['™']='M-^Y' ['š']='M-^Z' ['›']='M-^[' ['œ']='M-^\' ['']='M-^]' ['ž']='M-^^' ['Ÿ']='M-^_' [' ']='M- ' ['¡']='M-!' ['¢']='M-"' ['£']='M-#' ['¤']='M-$' ['¥']='M-%' ['¦']='M-&' ['§']="M-'" ['¨']='M-(' ['©']='M-)' ['ª']='M-*' ['«']='M-+' ['¬']='M-,' ['­']='M--' ['®']='M-.' ['¯']='M-/' ['°']='M-0' ['±']='M-1' ['²']='M-2' ['³']='M-3' ['´']='M-4' ['µ']='M-5' ['¶']='M-6' ['·']='M-7' ['¸']='M-8' ['¹']='M-9' ['º']='M-:' ['»']='M-;' ['¼']='M-<' ['½']='M-=' ['¾']='M->' ['¿']='M-?' ['À']='M-@' ['Á']='M-A' ['Â']='M-B' ['Ã']='M-C' ['Ä']='M-D' ['Å']='M-E' ['Æ']='M-F' ['Ç']='M-G' ['È']='M-H' ['É']='M-I' ['Ê']='M-J' ['Ë']='M-K' ['Ì']='M-L' ['Í']='M-M' ['Î']='M-N' ['Ï']='M-O' ['Ð']='M-P' ['Ñ']='M-Q' ['Ò']='M-R' ['Ó']='M-S' ['Ô']='M-T' ['Õ']='M-U' ['Ö']='M-V' ['×']='M-W' ['Ø']='M-X' ['Ù']='M-Y' ['Ú']='M-Z' ['Û']='M-[' ['Ü']='M-\' ['Ý']='M-]' ['Þ']='M-^' ['ß']='M-_' ['à']='M-`' ['á']='M-a' ['â']='M-b' ['ã']='M-c' ['ä']='M-d' ['å']='M-e' ['æ']='M-f' ['ç']='M-g' ['è']='M-h' ['é']='M-i' ['ê']='M-j' ['ë']='M-k' ['ì']='M-l' ['í']='M-m' ['î']='M-n' ['ï']='M-o' ['ð']='M-p' ['ñ']='M-q' ['ò']='M-r' ['ó']='M-s' ['ô']='M-t' ['õ']='M-u' ['ö']='M-v' ['÷']='M-w' ['ø']='M-x' ['ù']='M-y' ['ú']='M-z' ['û']='M-{' ['ü']='M-|' ['ý']='M-}' ['þ']='M-~' ['ÿ']='M-^?');
+    for ((i = 0; i < ${#line}; i++))
+    do
+        character=${line:i:1};
+        if [[ ! -n $character ]]; then
+            escaped_line+='^@';
+        else
+            escaped_line+=${replacements["$character"]-"$character"};
+        fi;
+    done;
+    printf %s "$escaped_line"
+}
+main () 
+{ 
+    :  <<EOD
+  Sample option parsing and automated help generation. This utility
+  attempts to imitate GNU cat.
+
+  This shows some of the short-comings of cmdline.*, namely that help
+  strings look a bit ugly when they're too long (unless you're ok
+  with not wrapping to 80 characters)
+
+  It's also a bit easy to get confused between all these special
+  characters, i.e. :'s and ='s.
+
+  Also, it's not a true cat, because it cannot handle NUL bytes (and
+  I will not attempt to solve it)
+EOD
+
+    typeset IFS type value file line line_number
+    typeset opt_number_nonblank opt_show_ends opt_number;
+    typeset opt_squeeze_blank opt_show_tabs opt_show_nonprinting;
+    typeset -a files;
+    typeset version='gcat 0.9';
+    typeset -a options=('name=show_all:short=A:long=show-all:help=equivalent to -vET' 'name=number_nonblank:short=b:long=number-nonblank:help=number ''nonempty output lines, overrides -n' 'name=show_nonprinting_ends:short=e:help=equivalent to -vE' 'name=show_ends:short=E:long=show-ends:help=display $ at end ''of each line' 'name=number:short=n:long=number:help=number all output lines' 'name=squeeze_blank:short=s:long=squeeze-blank:help=suppress ''repeated empty output lines' 'name=show_nonprinting_tabs:short=t:help=equivalent to -vT' 'name=show_tabs:short=T:long=show-tabs:help=display TAB ''characters as ^I' 'name=unknown:short=u:help=(ignored)' 'name=show_nonprinting:short=v:long=show-nonprinting:help=use ^ ''and M- notation, except for LFD and TAB' 'name=help:long=help:help=display this help and exit' 'name=version:long=version:help=output version information and exit');
+    while read -rd '' type value; do
+        case $type in 
+            @)
+                if [[ $value = - ]]; then
+                    files+=("/dev/stdin");
+                else
+                    files+=("$value");
+                fi
+            ;;
+            -)
+                common.die "unknown option ''$value''"
+            ;;
+            show_all)
+                opt_show_ends=y opt_show_tabs=y opt_show_nonprinting=y
+            ;;
+            number_nonblank)
+                opt_number_nonblank=y
+            ;;
+            show_nonprinting_ends)
+                opt_show_ends=y opt_show_nonprinting=y
+            ;;
+            show_ends)
+                opt_show_ends=y
+            ;;
+            number)
+                opt_number=y
+            ;;
+            squeeze_blank)
+                opt_squeeze_blank=y
+            ;;
+            show_nonprinting_tabs)
+                opt_show_tabs=y opt_show_nonprinting=y
+            ;;
+            show_tabs)
+                opt_show_tabs=y
+            ;;
+            show_nonprinting)
+                opt_show_nonprinting=y
+            ;;
+            help)
+                cmdline.help "${options[@]}";
+                return 0
+            ;;
+            version)
+                printf 'gcat\n';
+                return 0
+            ;;
+        esac;
+    done < <(cmdline.arguments "${options[@]}" -- "$@");
+    ((${#files[@]})) || files=(/dev/stdin);
+    for file in "${files[@]}";
+    do
+        while IFS= read -r line; do
+            if [[ -n $opt_number_nonblank && -n $line ]]; then
+                ((line_number++));
+            else
+                if [[ -n $opt_number ]]; then
+                    ((line_number++));
+                fi;
+            fi;
+            trailing_newline=y emit-line "$line_number" "$line";
+        done < "$file";
+        [[ -n $line ]] && { 
+            ((line_number++));
+            emit-line "$line_number" "$line"
+        };
+    done
+}
+main "$@"

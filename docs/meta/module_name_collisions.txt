@@ -1,0 +1,47 @@
+"Module" name collisions
+========================
+
+Since bash doesn't have the concept of modules, or a way to
+encapsulate names within another name, we run the risk of name
+collision.
+
+For the case of a library like bashly, which is managed by one
+person, it's not an issue. But once we pretend to be able to
+integrate 3rd party "modules" or function libraries, this becomes an
+issue.
+
+Examples:
+
+- What if two JSON parsing libraries are developed, both with the
+  same name "json.bashly" and using the json.* prefix to name
+  functions?
+
+If the developer's needs are fullfilled by a single library, this is
+not an issue again, but if for some reason, the user has to use both
+(different features, perhaps), what should the user do?
+
+- Rename all the functions of one of the libraries manually? What if
+  the library gets updated, is the user going to apply these changes
+  manually? What a mess.
+
+Python, for example, handles this by allowing something similar to
+this:
+
+>>> import foo.json as json_a
+>>> import bar.json as json_b
+
+And that's it. You now use json_a.func for a ''func'' function in
+foo.json, and json_b.parse for a ''parse'' function in bar.json.
+
+It's really simple and convenient.
+
+
+So, what can be done within bashly to deal with this?
+
+Options:
+
+- Introduce a name rewriting feature that get's triggered on load
+  time, so, the user just writes: '':load json as json_a'', which
+  then loads ''json'' rewriting all the json.* functions to json_a.*.
+
+- What else?
