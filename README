@@ -1,52 +1,32 @@
-Please read the makefile to check the sample script.
+bashly
+======
 
-(or check the 'lib/http.bashly', 'src/dpaste', and 'bashly' scripts)
+This project, bashly, is yet another attempt of a library of reusable
+bash functions. Though, its development is driven by the following
+core principles:
 
-Basically, you make a "source" script, which you then "compile" to
-its final form, "linking" libraries to it.
+- Encapsulate all state within the functions (no global variables)
+- Avoid ''eval'' at all costs. It is really hard to read scripts that
+  (ab)use eval, and even more difficult to maintain. There are also
+  security risks associated to the use of eval.
+- Avoid external commands, bashly attempts to be standalone. The only
+  commands that are going to be used are: od (it's POSIX, and to
+  overcome the binary stream handling of bash). This should make it
+  very portable across systems where bash is available.
+- Lots of tests. Code should be written with testability in mind.
+- Follow best practices for bash programming.
+- Make it easy to create stand-alone scripts that are linked to the
+  bashly modules, but also make it easy to update linked scripts.
 
-Libraries are just a bundle of bash functions, which attempt to solve
-common problems.
 
-The points of having this mechanism:
+The modules (or libraries) reside in the lib/ hierarchy. They have
+the bashly extension, to easily identify them as libraries. Each
+library should have its own battery of tests under the test/
+hierarchy. Also, each library should have its own documentation under
+docs/lib.
 
-- Allow code reuse, but without copy-pasting between scripts.
+You will find sample scripts based on bashly under the src/
+directory, with their "linked" forms under bin/
 
-- Remove the hassle of "linking" libraries on runtime via the
-  ''source'' command. It's a hassle, because you have to sometimes
-  hard-code paths to libraries, and modifications are usual just to
-  use a few functions.
 
-- Just because I thought it would be cool to have something like this
-  in bash.
-
-- Allow for easier testability of the libraries, because each one
-  lives in its own file, and your test code just loads that specific
-  library. (I'm thinking if it would be possible to disable the
-  recursive loading and instead mock the functions on which the
-  tested library depends, so that it's easier to test the individual
-  functions)
-
-The drawbacks identified so far:
-
-- All your application code has to be wrapped within a "main"
-  function (you choose whatever name you want, just make sure to call
-  it last in the script)
-
-- Currently all functions from a library are included, there's no
-  evident way of just manually selecting a few. Maybe an explicit
-  :use trigger to mark which functions we want to be loaded, though
-  then we would have to manually determine on what other functions
-  the included functions depend on... sounds like an inception hell.
-
-- Introduces the extraneous :load command.
-
-- I'm looking for a way to introduce private functions, maybe as
-  functions expanded inline, to avoid polluting with helper functions
-  that make only sense when called from another function (like having
-  the recursive helper function foo_rec and the entry function foo,
-  keeping foo_rec hidden, and exposing only rec).
-
-- Of course, the typical drawbacks of bash apply, namely the
-  difficulty of passing around arrays between functions. Creativity
-  must be applied to overcome this issue.
+Feed-back in the form of issues is greatly appreciated.
