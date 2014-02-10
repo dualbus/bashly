@@ -136,9 +136,9 @@ EOD
 
 
   typeset option_description parameters key value shift argument
-  typeset long short required arguments help stop_parsing return_code
+  typeset long short required arguments stop_parsing return_code
   typeset -a parameters
-  typeset -A long_map short_map required_map arguments_map help_map
+  typeset -A long_map short_map required_map arguments_map
 
 
   shift=0
@@ -150,7 +150,7 @@ EOD
 
     IFS=: read -ra parameters <<< "$option_description"
 
-    name= long= short= required= arguments=0 help=
+    name= long= short= required= arguments=0
     for parameter in "${parameters[@]}"; do
       IFS== read -r key value <<< "$parameter"
 
@@ -160,7 +160,6 @@ EOD
         short) short=$value;;
         required) required=$value;;
         arguments) arguments=$value;;
-        help) help=$value;;
       esac
 
       name=${name:-"$long"}
@@ -172,7 +171,6 @@ EOD
       [[ $short ]] && short_map["$short"]=$name
       required_map["$name"]=$required
       arguments_map["$name"]=$arguments
-      help_map["$name"]=$help
     done
   done
 
