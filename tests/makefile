@@ -6,6 +6,7 @@ tests=\
 	cmdline \
 	date \
 	http \
+	ipv4 \
 	process \
 	regex \
 	shell \

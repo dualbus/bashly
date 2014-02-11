@@ -13,6 +13,18 @@ function bytes.ord {
 }
 
 
+function bytes.hex {
+  LC_CTYPE=C printf '%x' "'$1"
+}
+
+
+function bytes.unhex {
+  [[ $1 = ?([[:xdigit:]])[[:xdigit:]] ]] || return 1
+
+  printf '\x'"$1"
+}
+
+
 function bytes.write-uint32-le {
   typeset number=$1
   typeset hex

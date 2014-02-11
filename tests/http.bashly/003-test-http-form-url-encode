@@ -1,0 +1,14 @@
+#!/bin/bash
+
+:load http
+
+function test {
+  [[ $(http.form-url-encode '123') = '123' ]] || return 1
+  [[ $(http.form-url-encode 'abc') = 'abc' ]] || return 1
+  [[ $(http.form-url-encode ':;#') = '%3A%3B%23' ]] || return 1
+  [[ $(http.form-url-encode 'á') = 'á' ]] || return 1
+
+  return 0
+}
+
+test

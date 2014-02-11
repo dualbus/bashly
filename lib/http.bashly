@@ -15,7 +15,7 @@ function http.percent-encode {
   for ((position=0; position<${#data}; position++)); do
     character=${data:position:1}
 
-    if [[ $character = [[:alpha:].~-] ]]; then
+    if [[ $character = [[:alnum:].~-] ]]; then
       printf %s "$character"
     else
       printf %%%02X "$(bytes.ord "$character")"

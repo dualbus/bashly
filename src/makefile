@@ -3,7 +3,8 @@
 bin=\
 	dpaste.cbash \
 	echo.cbash \
-	gcat.cbash
+	gcat.cbash \
+	url.cbash
 
 bindir=../bin
 

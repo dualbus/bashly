@@ -50,9 +50,18 @@ bytes.chr ()
     ((0 <= dec && dec < 256)) || return 1;
     printf \\$((dec/64*100+dec%64/8*10+dec%8))
 }
+bytes.hex () 
+{ 
+    LC_CTYPE=C printf '%x' "'$1"
+}
 bytes.ord () 
 { 
     LC_CTYPE=C printf '%d' "'$1"
+}
+bytes.unhex () 
+{ 
+    [[ $1 = ?([[:xdigit:]])[[:xdigit:]] ]] || return 1;
+    printf '\x'"$1"
 }
 bytes.write-uint32-be () 
 { 
@@ -134,7 +143,7 @@ http.percent-encode ()
     for ((position=0; position<${#data}; position++))
     do
         character=${data:position:1};
-        if [[ $character = [[:alpha:].~-] ]]; then
+        if [[ $character = [[:alnum:].~-] ]]; then
             printf %s "$character";
         else
             printf %%%02X "$(bytes.ord "$character")";

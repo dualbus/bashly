@@ -75,3 +75,22 @@ function array.reverse {
 
   printf '%s\0' "${reversed[@]}"
 }
+
+
+function array.maximum {
+  :
+}
+
+
+function array.minimum {
+  :
+}
+
+
+function array.maximum-numeric {
+  :
+}
+
+function array.minimum-numeric {
+  :
+}
