@@ -1,13 +1,28 @@
-- Implement JSON parser
-- Implement color handling
-- Implement MD5/SHA1 (native and with od)
-- Implement Base64 encoding (native and with od)
-- Add arbitrary header support to the HTTP functions
-- Implement XML parser
-- Implement INI parser
-- Implement stronger random generator
-- Implement mustache templating
-- Implement file editing features (delete line, add line, replace
-  line)
-- Implement library to send mail from bash (using /dev/tcp)
-- "Is valid IPv4 address?" function
+0.1 release, *2014-02-28:
+  - Add arbitrary header support to the HTTP functions
+  - "Is valid IPv4 address?" function
+  - Implement JSON parser
+  - Implement color handling
+  - Add dynamic loading ': load' function.
+
+
+0.2 release, *2014-03-31:
+  - Implement INI parser
+  - Implement mustache templating
+  - Implement library to send mail from bash (using /dev/tcp)
+
+
+0.3 release, *2014-04-30:
+  - Implement MD5/SHA1 (native and with od)
+  - Implement Base64 encoding (native and with od)
+
+
+0.4 release, *2014-05-31:
+  - Implement XML parser
+  - Implement stronger random generator
+
+
+
+Unsorted:
+  - Implement file editing features (delete line, add line, replace
+    line)
