@@ -4,6 +4,7 @@ bin=\
 	dpaste.cbash \
 	echo.cbash \
 	gcat.cbash \
+	random.cbash \
 	url.cbash
 
 bindir=../bin
