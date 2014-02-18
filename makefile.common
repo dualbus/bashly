@@ -1,0 +1,11 @@
+.POSIX:
+
+rm=rm -f
+bash=/bin/bash
+bashly=BASHLY_PATH=$(rootdir)/lib $(rootdir)/bashly
+
+bindir=$(rootdir)/bin
+testsdir=$(rootdir)/tests
+srcdir=$(rootdir)/src
+
+.SUFFIXES: .bash .cbash .bashly

@@ -1,12 +1,11 @@
 .POSIX:
 
+rootdir=../..
+
+include $(rootdir)/makefile.common
+
 tests=\
 	csv
-
-bashly=BASHLY_PATH=../../lib ../../bashly
-bash=/bin/bash
-
-.SUFFIXES: .bashly
 
 all: $(tests)
 

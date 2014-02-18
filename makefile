@@ -1,15 +1,18 @@
 .POSIX:
 
-testdir=tests
-srcdir=src
+rootdir=.
+
+include $(rootdir)/makefile.common
+
+.PHONY: compile tests clean
 
 all: compile
 
 compile:
 	(cd $(srcdir)  && $(MAKE))
 
-test:
-	(cd $(testdir) && $(MAKE))
+tests:
+	(cd $(testsdir) && $(MAKE))
 
 clean:
 	(cd $(srcdir)  && $(MAKE) clean)

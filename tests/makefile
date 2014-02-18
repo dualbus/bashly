@@ -1,5 +1,9 @@
 .POSIX:
 
+rootdir=..
+
+include $(rootdir)/makefile.common
+
 tests=\
 	array \
 	bytes \
@@ -14,11 +18,6 @@ tests=\
 
 packages=\
 	format
-
-bashly=BASHLY_PATH=../lib ../bashly
-bash=/bin/bash
-
-.SUFFIXES: .bashly
 
 all: $(tests) packages
 

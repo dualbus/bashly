@@ -151,11 +151,21 @@ for bashly_loaded_module in "${bashly_loaded_modules[@]}"; do
   bashlies["$bashly_loaded_module"]=loaded
 done
 
+if [[ $2 ]]; then
+  exec > "$2" || exit
+
+  if [[ -f "$2" ]]; then
+    chmod +x "$2" || exit
+  fi
+
+  printf '%s\n' '#!/usr/bin/env bash'
+fi
+
 # The magic of the script comes from using the extdebug shell option.
 # It basically parses the input file, and loads all function
 # declarations, executing loops, conditionals, and other types of
 # statements, except that simple commands have no effect at all.
-shopt -s extdebug;
+shopt -s extdebug; set -T;
 
 trap '
   if ((BASH_LINENO)); then
