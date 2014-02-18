@@ -5,7 +5,7 @@
 #
 #FUNCNEST=1000
 
-function scheme.add {
+function scheme__add {
   typeset arg acc=0
 
   for arg do ((acc += arg)); done
@@ -14,7 +14,7 @@ function scheme.add {
 }
 
 
-function scheme.substract {
+function scheme__substract {
   typeset arg acc=$1
 
   shift
@@ -24,11 +24,11 @@ function scheme.substract {
   printf %s "$acc"
 }
 
-function scheme.lambda {
+function scheme__lambda {
   echo "$@"
 }
 
-function scheme.__lambda.consume {
+function scheme__p__lambda__consume {
   typeset open current_token
 
   [[ $1 = '(' && $2 = 'lambda' && $3 = '(' ]] || return 1
@@ -61,12 +61,12 @@ function scheme.__lambda.consume {
 }
 
 
-function scheme.dispatch {
+function scheme__dispatch {
   typeset operator=$1
   typeset -A operator_table=(
-    ['+']=scheme.add
-    ['-']=scheme.substract
-    ['lambda']=scheme.lambda
+    ['+']=scheme__add
+    ['-']=scheme__substract
+    ['lambda']=scheme__lambda
   )
   
   shift
@@ -75,7 +75,7 @@ function scheme.dispatch {
 }
 
 
-function scheme.__evaluate.recurse {
+function scheme__p__evaluate__recurse {
   typeset -a operands
   typeset operator current_token shift value IFS
 
@@ -83,7 +83,7 @@ function scheme.__evaluate.recurse {
     '(')
       case $2 in
         lambda)
-          shift=$(scheme.__lambda.consume "$@")
+          shift=$(scheme__p__lambda__consume "$@")
 
           unset IFS; value="${*:1:shift}"
 
@@ -109,7 +109,7 @@ function scheme.__evaluate.recurse {
             case $1 in
               '(')
                 IFS=: read -rd '' shift value < \
-                  <(scheme.__evaluate.recurse "$@")
+                  <(scheme__p__evaluate__recurse "$@")
 
                 operands+=("$value")
 
@@ -120,7 +120,7 @@ function scheme.__evaluate.recurse {
 
               ')')
                 printf '%u:%s' "$((current_token + 1))" \
-                  "$(scheme.dispatch "$operator" "${operands[@]}")"
+                  "$(scheme__dispatch "$operator" "${operands[@]}")"
 
                 return 0
                 ;;
@@ -143,11 +143,11 @@ function scheme.__evaluate.recurse {
 }
 
 
-function scheme.evaluate {
+function scheme__evaluate {
   typeset value shift
 
   while (($#)); do
-    IFS=: read -r shift value < <(scheme.__evaluate.recurse "$@")
+    IFS=: read -r shift value < <(scheme__p__evaluate__recurse "$@")
 
     printf %s "$value"
 
@@ -155,6 +155,6 @@ function scheme.evaluate {
   done
 }
 
-#echo "$(scheme.evaluate \( + 5 \( - 2 \( + 2 20 \) 2 \) \))"
-#echo "$(scheme.evaluate \( lambda \( x y \) \( + y x \) \))"
-#echo "$(scheme.evaluate \( + 2 \) \( + 2 \))"
+#echo "$(scheme__evaluate \( + 5 \( - 2 \( + 2 20 \) 2 \) \))"
+#echo "$(scheme__evaluate \( lambda \( x y \) \( + y x \) \))"
+#echo "$(scheme__evaluate \( + 2 \) \( + 2 \))"

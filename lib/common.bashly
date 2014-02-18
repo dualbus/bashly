@@ -2,10 +2,10 @@
 
 : load log
 
-function common.die {
+function common__die {
   typeset exit_status=$2
 
-  log.error "$1"
+  log__error "$1"
 
   exit "${exit_status:-1}"
 }

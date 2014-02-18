@@ -1,8 +1,8 @@
 #!/bin/bash
 
+: load cmdline
 : load common
 : load log
-: load cmdline
 
 function main {
   typeset type_ value
@@ -21,14 +21,14 @@ function main {
       type) type=$value;;
       length) length=$value;;
       source) source=$value;;
-      help) cmdline.help "${options[@]}";;
-      *) common.die "unexpected ''$value''";;
+      help) cmdline__help "${options[@]}";;
+      *) common__die "unexpected ''$value''";;
     esac
-  done < <(cmdline.arguments "${options[@]}" -- "$@")
+  done < <(cmdline__arguments "${options[@]}" -- "$@")
 
-  log.debug "type: $type"
-  log.debug "length: $length"
-  log.debug "source: $source"
+  log__debug "type: $type"
+  log__debug "length: $length"
+  log__debug "source: $source"
 
   case $type in
     xdigit|alnum|alpha|digit) 
@@ -36,7 +36,7 @@ function main {
         "$(tr -cd "[:$type:]" < "$source" | head -c "$length")"
       ;;
     *)
-      common.die "wrong type ''$type''"
+      common__die "wrong type ''$type''"
       ;;
   esac
 }

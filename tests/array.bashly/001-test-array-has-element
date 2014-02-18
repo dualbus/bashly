@@ -3,10 +3,10 @@
 : load array
 
 function test {
-  array.has-element 1 1 2 3 || return 1
-  array.has-element a 1 2 3 && return 1
-  array.has-element         && return 1
-  array.has-element a       && return 1
+  array__has_element 1 1 2 3 || return 1
+  array__has_element a 1 2 3 && return 1
+  array__has_element         && return 1
+  array__has_element a       && return 1
 
   return 0
 }

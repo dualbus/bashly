@@ -6,9 +6,7 @@
 
 
 # FIXME: Check against multibyte encodings!
-function http.percent-encode {
-  : RFC3986
-
+function http__percent_encode {
   typeset character position data=$1
   typeset -x LC_TYPE=C
 
@@ -18,36 +16,36 @@ function http.percent-encode {
     if [[ $character = [[:alnum:].~-] ]]; then
       printf %s "$character"
     else
-      printf %%%02X "$(bytes.ord "$character")"
+      printf %%%02X "$(bytes__ord "$character")"
     fi
   done
 }
 
 
-function http.form-url-encode {
+function http__form_url_encode {
   : application/x-www-form-urlencoded
 
-  typeset data=$(http.percent-encode "$1")
+  typeset data=$(http__percent_encode "$1")
 
   printf %s "${data//%20/+}"
 }
 
 
-function http.percent-decode {
+function http__percent_decode {
   typeset data=${1//\\/\\\\}
 
   printf "${data//%/\\x}"
 }
 
 
-function http.form-url-decode {
+function http__form_url_decode {
     typeset data=${1//+/%20}
 
-    http.percent-decode "$data"
+    http__percent_decode "$data"
 }
 
 
-function http.query-string-encode {
+function http__query_string_encode {
   : <<EOD
   Converts an associative array (or a pair of normal arrays) to a
   query string.
@@ -61,7 +59,7 @@ function http.query-string-encode {
 
   # Sample call
   typeset -A params=(['foo']=bar ['bar']=baz)
-  http.query-string-encode "${!params[@]}" "${params[@]}"
+  http__query_string_encode "${!params[@]}" "${params[@]}"
 EOD
 
 
@@ -76,7 +74,7 @@ EOD
 }
 
 
-function http.url-parse {
+function http__url_parse {
   : <<EOD
   Parses a URL into its components.
 
@@ -85,7 +83,7 @@ function http.url-parse {
 
   $scheme:$username:$password:$netloc:$port:$path:$query_string:$fragment
 
-  http.url-parse 'http://u:p@www.domain.com:8080/path/to/file.ext?q=s#frag'
+  http__url_parse 'http://u:p@www.domain.com:8080/path/to/file.ext?q=s#frag'
 EOD
 
   typeset url=$1 default_scheme=$2
@@ -154,14 +152,14 @@ EOD
 }
 
 
-function http.get {
+function http__get {
   typeset url=$1
   typeset scheme username password netloc port path query_string
   typeset fragment resource IFS=:
   typeset -a request=()
 
   IFS=: read -r scheme _ _ netloc port path query_string _ \
-    < <(http.url-parse "$url")
+    < <(http__url_parse "$url")
 
   resource=$path
 
@@ -171,18 +169,18 @@ function http.get {
   request+=("Host: $netloc")
   request+=('')
 
-  printf '%s\r\n' "${request[@]}" | network.tcp-send "$netloc" "$port"
+  printf '%s\r\n' "${request[@]}" | network__tcp_send "$netloc" "$port"
 }
 
 # FIXME: check against header injection (i.e. $resource)
-function http.post {
+function http__post {
   typeset url=$1 form=$2
   typeset scheme username password netloc port path query_string
   typeset fragment resource IFS=:
   typeset -a request=()
 
   read -r scheme _ _ netloc port path query_string _ \
-    < <(http.url-parse "$url")
+    < <(http__url_parse "$url")
 
   resource=$path
 
@@ -195,5 +193,5 @@ function http.post {
   request+=('')
   request+=("$form")
 
-  printf '%s\r\n' "${request[@]}" | network.tcp-send "$netloc" "$port"
+  printf '%s\r\n' "${request[@]}" | network__tcp_send "$netloc" "$port"
 }

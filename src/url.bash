@@ -21,13 +21,13 @@ function main {
         echo bad "$value"; exit 1
         ;;
       encode)
-        command=http.form-url-encode argument=$value; break
+        command=http__form_url_encode argument=$value; break
         ;;
       decode)
-        command=http.form-url-decode argument=$value; break
+        command=http__form_url_decode argument=$value; break
         ;;
     esac
-  done < <(cmdline.arguments "${options[@]}" -- "$@")
+  done < <(cmdline__arguments "${options[@]}" -- "$@")
   
   "$command" "$argument"
 }

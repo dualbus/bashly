@@ -3,8 +3,8 @@
 : load http
 
 function main {
-  typeset content=$(http.form-url-encode "$(cat "${1:-/dev/stdin}")")
-  typeset query_string=$(http.query-string-encode content "$content")
+  typeset content=$(http__form_url_encode "$(cat "${1:-/dev/stdin}")")
+  typeset query_string=$(http__query_string_encode content "$content")
   typeset key value
   {
       read
@@ -15,7 +15,7 @@ function main {
             return 0
         fi
       done
-  } < <(http.post 'http://dpaste.com/api/v1/' "$query_string")
+  } < <(http__post 'http://dpaste.com/api/v1/' "$query_string")
 
   return 1
 }

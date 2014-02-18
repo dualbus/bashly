@@ -1,3 +1,3 @@
-: filecompare.intersect
-: filecompare.substract
-: filecompare.union
+: filecompare__intersect
+: filecompare__substract
+: filecompare__union

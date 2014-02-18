@@ -19,7 +19,7 @@ EOD
   typeset -a arguments
 
   errors_not_fatal=y dashdash_not_special=y \
-    cmdline.arguments "${options[@]}" -- "$@" | {
+    cmdline__arguments "${options[@]}" -- "$@" | {
       while read -rd '' type value; do
         case $type in 
           @|-)

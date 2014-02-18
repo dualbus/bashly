@@ -1,9 +1,9 @@
 #!/bin/bash
 
 
-: string.trim string chars
+: string__trim string chars
 
-function string.c-escape {
+function string__c_escape {
   typeset string=$1
 
   string=${string//\\/\\\\}

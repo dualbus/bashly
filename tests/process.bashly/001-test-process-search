@@ -3,8 +3,8 @@
 : load process
 
 function test {
-  process.search bash >/dev/null || return 1
-  process.search bash-$RANDOM$RANDOM$RANDOM && return 1
+  process__search bash >/dev/null || return 1
+  process__search bash-$RANDOM$RANDOM$RANDOM && return 1
 
   return 0
 }

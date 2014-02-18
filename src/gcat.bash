@@ -4,7 +4,7 @@
 : load cmdline
 
 
-function escape-line {
+function escape_line {
   typeset line=$1
   typeset i character escaped_line
   typeset -A replacements=(
@@ -63,7 +63,7 @@ function escape-line {
 }
 
 
-function emit-line {
+function emit_line {
   typeset line_number=$1 line=$2
   typeset LC_CTYPE=C
 
@@ -76,7 +76,7 @@ function emit-line {
   fi
 
   if [[ $opt_show_nonprinting ]]; then
-    IFS= read -r line < <(escape-line "$line")
+    IFS= read -r line < <(escape_line "$line")
   fi
 
 
@@ -105,9 +105,9 @@ function main {
   Sample option parsing and automated help generation. This utility
   attempts to imitate GNU cat.
 
-  This shows some of the short-comings of cmdline.*, namely that help
-  strings look a bit ugly when they're too long (unless you're ok
-  with not wrapping to 80 characters)
+  This shows some of the short-comings of cmdline__*, namely that
+  help strings look a bit ugly when they're too long (unless you're
+  ok with not wrapping to 80 characters)
 
   It's also a bit easy to get confused between all these special
   characters, i.e. :'s and ='s.
@@ -152,7 +152,7 @@ EOD
         ;;
 
       -)
-        common.die "unknown option ''$value''"
+        common__die "unknown option ''$value''"
         ;;
 
       show_all)
@@ -192,14 +192,14 @@ EOD
         ;;
 
       help)
-        cmdline.help "${options[@]}"; return 0
+        cmdline__help "${options[@]}"; return 0
         ;;
 
       version)
         printf 'gcat\n'; return 0
         ;;
     esac
-  done < <(cmdline.arguments "${options[@]}" -- "$@")
+  done < <(cmdline__arguments "${options[@]}" -- "$@")
 
   ((${#files[@]})) || files=(/dev/stdin)
 
@@ -211,13 +211,13 @@ EOD
         ((line_number++))
       fi
 
-      trailing_newline=y emit-line "$line_number" "$line"
+      trailing_newline=y emit_line "$line_number" "$line"
     done < "$file"
 
     [[ $line ]] && {
       ((line_number++))
 
-      emit-line "$line_number" "$line"
+      emit_line "$line_number" "$line"
     }
   done
 }

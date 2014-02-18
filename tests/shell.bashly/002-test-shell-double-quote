@@ -3,11 +3,11 @@
 : load shell
 
 function test {
-  [[ $(shell.double-quote 'a"b') = '"a\"b"' ]] || return 1
-  [[ $(shell.double-quote 'a$(ls)b') = '"a\$(ls)b"' ]] || return 1
-  [[ $(shell.double-quote 'a`ls`b') = '"a\`ls\`b"' ]] || return 1
-  [[ $(shell.double-quote 'a$(ls $1)b') = '"a\$(ls \$1)b"' ]] || return 1
-  [[ $(shell.double-quote 'a\b') = '"a\\b"' ]] || return 1
+  [[ $(shell__double_quote 'a"b') = '"a\"b"' ]] || return 1
+  [[ $(shell__double_quote 'a$(ls)b') = '"a\$(ls)b"' ]] || return 1
+  [[ $(shell__double_quote 'a`ls`b') = '"a\`ls\`b"' ]] || return 1
+  [[ $(shell__double_quote 'a$(ls $1)b') = '"a\$(ls \$1)b"' ]] || return 1
+  [[ $(shell__double_quote 'a\b') = '"a\\b"' ]] || return 1
 
   return 0
 }

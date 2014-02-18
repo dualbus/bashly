@@ -1,6 +1,6 @@
-: math.divide
-: math.multiply
-: math.add
-: math.substract
-: math.logarithm
-: math.power
+: math__divide
+: math__multiply
+: math__add
+: math__substract
+: math__logarithm
+: math__power

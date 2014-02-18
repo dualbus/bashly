@@ -5,12 +5,12 @@
 function test {
   typeset result
 
-  [[ $(printf 'a,b\n' | format.csv.parse) = $'a\nb' ]] || return 1
+  [[ $(printf 'a,b\n' | format__csv__parse) = $'a\nb' ]] || return 1
 
   result=$(printf "a\n\$'b\\\\nc'\nd\ne") 
-  [[ $(printf 'a,"b\nc"\nd,"e"\n' | format.csv.parse) = "$result" ]] || return 1
-  [[ $(printf 'a,b' | format.csv.parse) = $'a\nb' ]] || return 1
-  [[ $(printf 'a,' | format.csv.parse) = $'a\n\'\'' ]] || return 1
+  [[ $(printf 'a,"b\nc"\nd,"e"\n' | format__csv__parse) = "$result" ]] || return 1
+  [[ $(printf 'a,b' | format__csv__parse) = $'a\nb' ]] || return 1
+  [[ $(printf 'a,' | format__csv__parse) = $'a\n\'\'' ]] || return 1
 
   return 0
 }

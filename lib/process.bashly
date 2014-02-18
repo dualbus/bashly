@@ -1,9 +1,7 @@
 #!/bin/bash
 
 
-function process.search {
-  : process.search # pgrep
-
+function process__search {
   typeset name=$1
   typeset IFS pid comm return=1
 
@@ -19,17 +17,15 @@ function process.search {
 }
 
 
-function process.is-alive {
-  : process.is-alive
-
+function process__is_alive {
   typeset pid=$1
 
   kill -0 "$pid" 2>/dev/null
 }
 
 
-function process.timeout {
-  : process.timeout seconds command
+function process__timeout {
+  : process__timeout seconds command
 
   typeset seconds=$1
 

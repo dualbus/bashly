@@ -1,5 +1,5 @@
-: stream.split output-prefix 10 # 10 lines
-: stream.replace foo bar
-: stream.replace-global foo bar
-: stream.dos-to-unix
-: stream.unix-to-dos
+: stream__split output-prefix 10 # 10 lines
+: stream__replace foo bar
+: stream__replace_global foo bar
+: stream__dos_to_unix
+: stream__unix_to_dos

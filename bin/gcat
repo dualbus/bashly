@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-log.basic () 
+log__basic () 
 { 
     typeset argument;
     for argument in "$@";
@@ -7,134 +7,44 @@ log.basic ()
         printf '%s: %s\n' "${BASH_SOURCE##*/}" "$argument";
     done
 }
-log.debug () 
+log__debug () 
 { 
     typeset debug_level log_level;
     shift 2;
     if ((log_level >= debug_level)); then
-        log.with-type DEBUG "$@";
+        log__with_type DEBUG "$@";
     fi
 }
-log.error () 
+log__error () 
 { 
-    log.with-type ERROR "$@"
+    log__with_type ERROR "$@"
 }
-log.info () 
+log__info () 
 { 
-    log.with-type INFO "$@"
+    log__with_type INFO "$@"
 }
-log.warning () 
+log__warning () 
 { 
-    log.with-type WARNING "$@"
+    log__with_type WARNING "$@"
 }
-log.with-type () 
+log__with_type () 
 { 
     typeset type=$1 argument;
     shift;
     for argument in "$@";
     do
-        log.basic "$type: $argument" 1>&2;
+        log__basic "$type: $argument" 1>&2;
     done
 }
 
-common.die () 
+common__die () 
 { 
     typeset exit_status=$2;
-    log.error "$1";
+    log__error "$1";
     exit "${exit_status:-1}"
 }
 
-cmdline.__arguments.long () 
-{ 
-    typeset argument=$1;
-    typeset name i arguments;
-    [[ -n $argument ]] || return 1;
-    shift;
-    { 
-        typeset -p long_map || return 2;
-        typeset -p arguments_map || return 2
-    } > /dev/null 2>&1;
-    name=${long_map["${argument#--}"]};
-    [[ -n $name ]] || { 
-        printf -- '- %s\0' "$argument" 1>&3;
-        return 3
-    };
-    arguments=${arguments_map["$name"]};
-    if ((arguments == 0)); then
-        printf '%s\0' "$name" 1>&3;
-        return 0;
-    else
-        if ((arguments > $#)); then
-            return 4;
-        fi;
-    fi;
-    for ((i = 1; i <= arguments; i++))
-    do
-        printf '%s %s\0' "$name" "${@:i:1}" 1>&3;
-        shift;
-    done;
-    printf %s "$arguments"
-}
-cmdline.__arguments.short () 
-{ 
-    typeset argument=$1;
-    typeset name i arguments;
-    [[ -n $argument ]] || return 1;
-    shift;
-    { 
-        typeset -p short_map || return 2;
-        typeset -p arguments_map || return 2
-    } > /dev/null 2>&1;
-    name=${short_map["${argument#-}"]};
-    [[ -n $name ]] || { 
-        printf -- '- %s\0' "$argument" 1>&3;
-        return 3
-    };
-    arguments=${arguments_map["$name"]};
-    if ((arguments == 0)); then
-        printf '%s\0' "$name" 1>&3;
-        return 0;
-    else
-        if ((arguments > $#)); then
-            return 4;
-        fi;
-    fi;
-    for ((i = 1; i <= arguments; i++))
-    do
-        printf '%s %s\0' "$name" "${@:i:1}" 1>&3;
-        shift;
-    done;
-    printf %s "$arguments"
-}
-cmdline.__arguments.short-composed () 
-{ 
-    typeset argument=$1;
-    typeset option remainder name arguments;
-    [[ -n $argument ]] || return 1;
-    shift;
-    { 
-        typeset -p short_map || return 2;
-        typeset -p arguments_map || return 2
-    } > /dev/null 2>&1;
-    option=${argument#-} option=${option::1};
-    remainder=${argument#-?};
-    name=${short_map["$option"]};
-    [[ -n $name ]] || { 
-        printf -- '- %s\0' "$argument" 1>&3;
-        return 3
-    };
-    arguments=${arguments_map["$name"]};
-    if ((arguments == 0)); then
-        printf '%s\0' "$name" 1>&3;
-        if [[ -n $remainder ]]; then
-            cmdline.__arguments.short-composed "-$remainder" "$@" || return;
-        fi;
-    else
-        [[ -n $remainder ]] && set -- "$remainder" "$@";
-        cmdline.__arguments.short "-$option" "$@" || return;
-    fi
-}
-cmdline.arguments () 
+cmdline__arguments () 
 { 
     :  <<EOD
   - name of argument
@@ -146,7 +56,7 @@ cmdline.arguments ()
   
   name=help:long=help:short=h:required=:arguments=0:help=show this help
   
-  cmdline.arguments 
+  cmdline__arguments 
 
   env vars:
 
@@ -210,7 +120,7 @@ EOD
         case $argument in 
             -[!-])
                 { 
-                    shift=$(cmdline.__arguments.short "$@") || { 
+                    shift=$(cmdline__p__arguments__short "$@") || { 
                         return_code=$?;
                         [[ -n $errors_not_fatal ]] || return "$return_code"
                     }
@@ -219,7 +129,7 @@ EOD
             ;;
             -[!-]*)
                 { 
-                    shift=$(cmdline.__arguments.short-composed "$@") || { 
+                    shift=$(cmdline__p__arguments__short_composed "$@") || { 
                         return_code=$?;
                         [[ -n $errors_not_fatal ]] || return "$return_code"
                     }
@@ -234,7 +144,7 @@ EOD
 }" "$@";
                 fi;
                 { 
-                    shift=$(cmdline.__arguments.long "$@") || { 
+                    shift=$(cmdline__p__arguments__long "$@") || { 
                         return_code=$?;
                         [[ -n $errors_not_fatal ]] || return "$return_code"
                     }
@@ -256,7 +166,7 @@ EOD
         esac;
     done
 }
-cmdline.help () 
+cmdline__help () 
 { 
     typeset option_description name long short required arguments help;
     typeset key value parameter;
@@ -308,8 +218,98 @@ cmdline.help ()
         fi;
     done
 }
+cmdline__p__arguments__long () 
+{ 
+    typeset argument=$1;
+    typeset name i arguments;
+    [[ -n $argument ]] || return 1;
+    shift;
+    { 
+        typeset -p long_map || return 2;
+        typeset -p arguments_map || return 2
+    } > /dev/null 2>&1;
+    name=${long_map["${argument#--}"]};
+    [[ -n $name ]] || { 
+        printf -- '- %s\0' "$argument" 1>&3;
+        return 3
+    };
+    arguments=${arguments_map["$name"]};
+    if ((arguments == 0)); then
+        printf '%s\0' "$name" 1>&3;
+        return 0;
+    else
+        if ((arguments > $#)); then
+            return 4;
+        fi;
+    fi;
+    for ((i = 1; i <= arguments; i++))
+    do
+        printf '%s %s\0' "$name" "${@:i:1}" 1>&3;
+        shift;
+    done;
+    printf %s "$arguments"
+}
+cmdline__p__arguments__short () 
+{ 
+    typeset argument=$1;
+    typeset name i arguments;
+    [[ -n $argument ]] || return 1;
+    shift;
+    { 
+        typeset -p short_map || return 2;
+        typeset -p arguments_map || return 2
+    } > /dev/null 2>&1;
+    name=${short_map["${argument#-}"]};
+    [[ -n $name ]] || { 
+        printf -- '- %s\0' "$argument" 1>&3;
+        return 3
+    };
+    arguments=${arguments_map["$name"]};
+    if ((arguments == 0)); then
+        printf '%s\0' "$name" 1>&3;
+        return 0;
+    else
+        if ((arguments > $#)); then
+            return 4;
+        fi;
+    fi;
+    for ((i = 1; i <= arguments; i++))
+    do
+        printf '%s %s\0' "$name" "${@:i:1}" 1>&3;
+        shift;
+    done;
+    printf %s "$arguments"
+}
+cmdline__p__arguments__short_composed () 
+{ 
+    typeset argument=$1;
+    typeset option remainder name arguments;
+    [[ -n $argument ]] || return 1;
+    shift;
+    { 
+        typeset -p short_map || return 2;
+        typeset -p arguments_map || return 2
+    } > /dev/null 2>&1;
+    option=${argument#-} option=${option::1};
+    remainder=${argument#-?};
+    name=${short_map["$option"]};
+    [[ -n $name ]] || { 
+        printf -- '- %s\0' "$argument" 1>&3;
+        return 3
+    };
+    arguments=${arguments_map["$name"]};
+    if ((arguments == 0)); then
+        printf '%s\0' "$name" 1>&3;
+        if [[ -n $remainder ]]; then
+            cmdline__p__arguments__short_composed "-$remainder" "$@" || return;
+        fi;
+    else
+        [[ -n $remainder ]] && set -- "$remainder" "$@";
+        cmdline__p__arguments__short "-$option" "$@" || return;
+    fi
+}
 
-emit-line () 
+emit_line () 
 { 
     typeset line_number=$1 line=$2;
     typeset LC_CTYPE=C;
@@ -320,7 +320,7 @@ emit-line ()
         line=${line//'	'/^I};
     fi;
     if [[ -n $opt_show_nonprinting ]]; then
-        IFS= read -r line < <(escape-line "$line");
+        IFS= read -r line < <(escape_line "$line");
     fi;
     if [[ -n $opt_number ]]; then
         printf '% 6d\t%s' "$line_number" "$line";
@@ -342,7 +342,7 @@ emit-line ()
         printf '\n';
     fi
 }
-escape-line () 
+escape_line () 
 { 
     typeset line=$1;
     typeset i character escaped_line;
@@ -364,9 +364,9 @@ main ()
   Sample option parsing and automated help generation. This utility
   attempts to imitate GNU cat.
 
-  This shows some of the short-comings of cmdline.*, namely that help
-  strings look a bit ugly when they're too long (unless you're ok
-  with not wrapping to 80 characters)
+  This shows some of the short-comings of cmdline__*, namely that
+  help strings look a bit ugly when they're too long (unless you're
+  ok with not wrapping to 80 characters)
 
   It's also a bit easy to get confused between all these special
   characters, i.e. :'s and ='s.
@@ -391,7 +391,7 @@ EOD
                 fi
             ;;
             -)
-                common.die "unknown option ''$value''"
+                common__die "unknown option ''$value''"
             ;;
             show_all)
                 opt_show_ends=y opt_show_tabs=y opt_show_nonprinting=y
@@ -421,7 +421,7 @@ EOD
                 opt_show_nonprinting=y
             ;;
             help)
-                cmdline.help "${options[@]}";
+                cmdline__help "${options[@]}";
                 return 0
             ;;
             version)
@@ -429,7 +429,7 @@ EOD
                 return 0
             ;;
         esac;
-    done < <(cmdline.arguments "${options[@]}" -- "$@");
+    done < <(cmdline__arguments "${options[@]}" -- "$@");
     ((${#files[@]})) || files=(/dev/stdin);
     for file in "${files[@]}";
     do
@@ -441,11 +441,11 @@ EOD
                     ((line_number++));
                 fi;
             fi;
-            trailing_newline=y emit-line "$line_number" "$line";
+            trailing_newline=y emit_line "$line_number" "$line";
         done < "$file";
         [[ -n $line ]] && { 
             ((line_number++));
-            emit-line "$line_number" "$line"
+            emit_line "$line_number" "$line"
         };
     done
 }

@@ -8,7 +8,7 @@ function 2x {
 
 function test {
 
-  [[ $(bytes.write-uint32-le 12345 | 2x) = 39300000 ]]
+  [[ $(bytes__write_uint32_le 12345 | 2x) = 39300000 ]]
 
   return 0
 }

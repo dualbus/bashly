@@ -1,5 +1,5 @@
-: concurrent.lock
+: concurrent__lock
 
-function concurrent.lock {
+function concurrent__lock {
   :
 }

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function bytes.chr {
+function bytes__chr {
   typeset dec=$1
   ((0 <= dec && dec < 256))  || return 1
 
@@ -8,24 +8,24 @@ function bytes.chr {
 }
 
 
-function bytes.ord {
+function bytes__ord {
   LC_CTYPE=C printf '%d' "'$1"
 }
 
 
-function bytes.hex {
+function bytes__hex {
   LC_CTYPE=C printf '%x' "'$1"
 }
 
 
-function bytes.unhex {
+function bytes__unhex {
   [[ $1 = ?([[:xdigit:]])[[:xdigit:]] ]] || return 1
 
   printf '\x'"$1"
 }
 
 
-function bytes.write-uint32-le {
+function bytes__write_uint32_le {
   typeset number=$1
   typeset hex
 
@@ -39,7 +39,7 @@ function bytes.write-uint32-le {
 }
 
 
-function bytes.write-uint32-be {
+function bytes__write_uint32_be {
   typeset number=$1
   typeset hex
 

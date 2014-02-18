@@ -1,5 +1,5 @@
 #!/bin/bash
 
 
-: terminal.size
-: terminal.set-title
+: terminal__size
+: terminal__set_title

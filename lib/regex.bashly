@@ -1,9 +1,7 @@
 #!/bin/bash
 
 
-function regex.quote {
-  : regex.quote
-
+function regex__quote {
   typeset i character string=$1
 
   for ((i = 0; i < ${#string}; i++)); do

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-function cmdline.__arguments.short {
+function cmdline__p__arguments__short {
   typeset argument=$1
   typeset name i arguments
 
@@ -39,7 +39,7 @@ function cmdline.__arguments.short {
 }
 
 
-function cmdline.__arguments.short-composed {
+function cmdline__p__arguments__short_composed {
   typeset argument=$1
   typeset option remainder name arguments 
 
@@ -67,17 +67,17 @@ function cmdline.__arguments.short-composed {
     printf '%s\0' "$name" >&3
 
     if [[ $remainder ]]; then
-      cmdline.__arguments.short-composed "-$remainder" "$@" || return
+      cmdline__p__arguments__short_composed "-$remainder" "$@" || return
     fi
   else
     [[ $remainder ]] && set -- "$remainder" "$@"
 
-    cmdline.__arguments.short "-$option" "$@" || return
+    cmdline__p__arguments__short "-$option" "$@" || return
   fi
 }
 
 
-function cmdline.__arguments.long {
+function cmdline__p__arguments__long {
   typeset argument=$1
   typeset name i arguments
 
@@ -115,7 +115,7 @@ function cmdline.__arguments.long {
 }
 
 
-function cmdline.arguments {
+function cmdline__arguments {
   : <<EOD
   - name of argument
   - long form
@@ -126,7 +126,7 @@ function cmdline.arguments {
   
   name=help:long=help:short=h:required=:arguments=0:help=show this help
   
-  cmdline.arguments 
+  cmdline__arguments 
 
   env vars:
 
@@ -192,7 +192,7 @@ EOD
     case $argument in
       -[!-])
         {
-          shift=$(cmdline.__arguments.short "$@") || {
+          shift=$(cmdline__p__arguments__short "$@") || {
             return_code=$?
 
             [[ $errors_not_fatal ]] || return "$return_code";
@@ -204,7 +204,7 @@ EOD
 
       -[!-]*)
         {
-          shift=$(cmdline.__arguments.short-composed "$@") || {
+          shift=$(cmdline__p__arguments__short_composed "$@") || {
             return_code=$?
 
             [[ $errors_not_fatal ]] || return "$return_code";
@@ -222,7 +222,7 @@ EOD
         fi
 
         {
-          shift=$(cmdline.__arguments.long "$@") || {
+          shift=$(cmdline__p__arguments__long "$@") || {
             return_code=$?
 
             [[ $errors_not_fatal ]] || return "$return_code";
@@ -248,10 +248,10 @@ EOD
   done
 }
 
-: cmdline.usage
+: cmdline__usage
 
-: cmdline.help
-function cmdline.help {
+: cmdline__help
+function cmdline__help {
   typeset option_description name long short required arguments help
   typeset key value parameter
   typeset -a parameters

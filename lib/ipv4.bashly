@@ -1,9 +1,9 @@
 #!/bin/bash
 
 
-function ipv4.dot-to-ip {
+function ipv4__dot_to_ip {
   : <<EOD
-  ipv4.dot-to-ip -- Converts a dotted-decimal IPv4 address
+  ipv4__dot_to_ip -- Converts a dotted-decimal IPv4 address
     representation to the 32 bit unsigned integer.
 EOD
 
@@ -22,9 +22,9 @@ EOD
 }
 
 
-function ipv4.ip-to-dot {
+function ipv4__ip_to_dot {
   : <<EOD
-  ipv4.ip-to-dot -- Converts a 32 bit unsigned integer to
+  ipv4__ip_to_dot -- Converts a 32 bit unsigned integer to
   dotted-decimal notation.
 EOD
 
@@ -39,65 +39,65 @@ EOD
 }
 
 
-function ipv4.bits-to-mask {
+function ipv4__bits_to_mask {
   : <<EOD
-  ipv4.bits-to-mask -- Generates a dotted-decimal representation of a
+  ipv4__bits_to_mask -- Generates a dotted-decimal representation of a
   network mask with N bits enabled. 
 EOD
 
   typeset bits=$1
 
-  ipv4.ip-to-dot "$(( (2**32 - 1) & ~(2**(32 - bits) - 1) ))"
+  ipv4__ip_to_dot "$(( (2**32 - 1) & ~(2**(32 - bits) - 1) ))"
 }
 
 
-function ipv4.mask-to-bits {
+function ipv4__mask_to_bits {
   : <<EOD
-  ipv4.mask-to-bits -- Computes the number of bits enabled in a
+  ipv4__mask_to_bits -- Computes the number of bits enabled in a
   dotted-decimal representation of a network mask.
 EOD
 
   typeset i mask=$1
 
   for (( i = 32; i > 0; i-- )); do
-    [[ $mask = "$(ipv4.bits-to-mask "$i")" ]] && {
+    [[ $mask = "$(ipv4__bits_to_mask "$i")" ]] && {
       printf %u "$i"; return
     }
   done
 }
 
 
-function ipv4.mask-address {
+function ipv4__mask_address {
   : <<EOD
-  ipv4.mask-address -- Masks an IPv4 address represented in
+  ipv4__mask_address -- Masks an IPv4 address represented in
   dotted-decimal with a network mask also represented in
   dotted-decimal.
   
   e.g.:
 
-  $ ipv4.mask-address 10.10.4.10 255.255.255.0
+  $ ipv4__mask_address 10.10.4.10 255.255.255.0
   10.10.4.0
 EOD
 
   typeset dot mask
 
-  dot=$(ipv4.dot-to-ip "$1")
-  mask=$(ipv4.dot-to-ip "$2")
+  dot=$(ipv4__dot_to_ip "$1")
+  mask=$(ipv4__dot_to_ip "$2")
 
-  ipv4.ip-to-dot "$((dot & mask))"
+  ipv4__ip_to_dot "$((dot & mask))"
 }
 
 
-function ipv4.address-in-network {
+function ipv4__address_in_network {
   : <<'EOD'
-  ipv4.address-in-network --
+  ipv4__address_in_network --
   
   e.g.:
 
-  $ ipv4.address-in-network 10.10.4.10 10.10.4.0/24; echo $?
+  $ ipv4__address_in_network 10.10.4.10 10.10.4.0/24; echo $?
   0
 
-  $ ipv4.address-in-network 10.10.5.10 10.10.4.0/24; echo $?
+  $ ipv4__address_in_network 10.10.5.10 10.10.4.0/24; echo $?
   1
 EOD
   typeset dot=$1 network=$2
@@ -105,8 +105,8 @@ EOD
 
   IFS=/ read -r base_dot bits <<< "$network"
 
-  masked_address=$(ipv4.mask-address "$dot" "$(ipv4.bits-to-mask "$bits")")
-  masked_base=$(ipv4.mask-address "$base_dot" "$(ipv4.bits-to-mask "$bits")")
+  masked_address=$(ipv4__mask_address "$dot" "$(ipv4__bits_to_mask "$bits")")
+  masked_base=$(ipv4__mask_address "$base_dot" "$(ipv4__bits_to_mask "$bits")")
 
   [[ $masked_address = "$masked_base" ]]
 }

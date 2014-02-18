@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-function log.basic {
+function log__basic {
   typeset argument
 
   for argument do
@@ -10,34 +10,34 @@ function log.basic {
 }
 
 
-function log.with-type {
+function log__with_type {
   typeset type=$1 argument; shift
 
   for argument do
-    log.basic "$type: $argument" >&2
+    log__basic "$type: $argument" >&2
   done
 }
 
 
-function log.info {
-  log.with-type INFO "$@"
+function log__info {
+  log__with_type INFO "$@"
 }
 
 
-function log.warning {
-  log.with-type WARNING "$@"
+function log__warning {
+  log__with_type WARNING "$@"
 }
 
 
-function log.error {
-  log.with-type ERROR "$@"
+function log__error {
+  log__with_type ERROR "$@"
 }
 
 
-function log.debug {
+function log__debug {
   typeset debug_level log_level; shift 2
 
   if ((log_level >= debug_level)); then
-    log.with-type DEBUG "$@"
+    log__with_type DEBUG "$@"
   fi
 }

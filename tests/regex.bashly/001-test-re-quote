@@ -8,13 +8,13 @@ function test {
   typeset -a characters
 
   for character in {1..255}; do
-    IFS= read -rd '' character < <(bytes.chr "$character");
+    IFS= read -rd '' character < <(bytes__chr "$character");
     
     printf -v 'characters[i++]' %b "$character"
   done
 
   for character in "${characters[@]}"; do
-      IFS= read -rd '' regex < <(regex.quote "$character");
+      IFS= read -rd '' regex < <(regex__quote "$character");
 
       [[ $(printf %s "$character" | sed "s/$regex//") ]] && return 1
   done

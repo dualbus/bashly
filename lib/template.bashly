@@ -1,14 +1,14 @@
 #!/bin/bash
 
 
-function template.__simple.emit {
+function template__p__simple__emit {
   typeset character=$1
 
   printf '%s' "$character" >&3
 }
 
 
-function template.__simple.emit-variable {
+function template__p__simple__emit_variable {
   typeset variable=$1
   typeset value=${!variable}
 
@@ -16,7 +16,7 @@ function template.__simple.emit-variable {
 }
 
 
-function template.__simple.string {
+function template__p__simple__string {
   typeset character=$1 variable=$2
 
   case $character in
@@ -24,26 +24,26 @@ function template.__simple.string {
     \\) echo 'escape'; return;;
   esac
 
-  template.__simple.emit "$character"
+  template__p__simple__emit "$character"
 
   echo 'string'
 }
 
 
-function template.__simple.escape {
+function template__p__simple__escape {
   typeset character=$1 variable=$2
 
-  template.__simple.emit "$character"
+  template__p__simple__emit "$character"
 
   echo 'string'
 }
 
 
-function template.__simple.dollar {
+function template__p__simple__dollar {
   typeset character=$1 variable=$2
 
   if [[ $character = '{' ]]; then
-    echo 'left-brace'; return
+    echo 'left_brace'; return
   elif [[ $character = [[:alnum:]] ]]; then
     echo "variable:$variable$character"; return
   fi
@@ -54,24 +54,24 @@ function template.__simple.dollar {
 }
 
 
-function template.__simple.variable {
+function template__p__simple__variable {
   typeset character=$1 variable=$2
 
   if [[ $character = [[:alnum:]] ]]; then
     echo "variable:$variable$character"; return
   fi
 
-  template.__simple.emit-variable "$variable"
+  template__p__simple__emit_variable "$variable"
 
-  template.__simple.string "$character"
+  template__p__simple__string "$character"
 }
 
 
-function template.__simple.left-brace {
+function template__p__simple__left_brace {
   typeset character=$1 variable=$2
 
   if [[ $character = [[:alnum:]] ]]; then
-    echo "variable-brace:$variable$character"; return
+    echo "variable_brace:$variable$character"; return
   fi
 
   : invalid variable name character
@@ -79,22 +79,22 @@ function template.__simple.left-brace {
 }
 
 
-function template.__simple.right-brace {
+function template__p__simple__right_brace {
   typeset character=$1 variable=$2
 
-  template.__simple.string "$character"
+  template__p__simple__string "$character"
 }
 
 
-function template.__simple.variable-brace {
+function template__p__simple__variable_brace {
   typeset character=$1 variable=$2
 
   if [[ $character = '}' ]]; then
-    template.__simple.emit-variable "$variable"
+    template__p__simple__emit_variable "$variable"
 
-    echo 'right-brace'; return
+    echo 'right_brace'; return
   elif [[ $character = [[:alnum:]] ]]; then
-    echo "variable-brace:$variable$character"; return
+    echo "variable_brace:$variable$character"; return
   fi
 
   : error missing closing right brace
@@ -102,44 +102,42 @@ function template.__simple.variable-brace {
 }
 
 
-function template.__simple.error {
+function template__p__simple__error {
   typeset character=$1 variable=$2
 
   echo 'error'
 }
 
 
-function template.__simple.fsm {
-  : template.__simple.fsm
+function template__p__simple__fsm {
+  : template__p__simple__fsm
 
   typeset state=$1 character=$2 variable=$3
 
   case $state in
     string)
-      template.__simple.string "$character" "$variable";;
+      template__p__simple__string "$character" "$variable";;
     escape)
-      template.__simple.escape "$character" "$variable";;
+      template__p__simple__escape "$character" "$variable";;
     dollar)
-      template.__simple.dollar "$character" "$variable";;
+      template__p__simple__dollar "$character" "$variable";;
     variable)
-      template.__simple.variable "$character" "$variable";;
-    left-brace)
-      template.__simple.left-brace "$character" "$variable";;
-    right-brace)
-      template.__simple.right-brace "$character" "$variable";;
-    variable-brace)
-      template.__simple.variable-brace "$character" "$variable";;
+      template__p__simple__variable "$character" "$variable";;
+    left_brace)
+      template__p__simple__left_brace "$character" "$variable";;
+    right_brace)
+      template__p__simple__right_brace "$character" "$variable";;
+    variable_brace)
+      template__p__simple__variable_brace "$character" "$variable";;
     error)
-      template.__simple.error; return 1;;
+      template__p__simple__error; return 1;;
   esac
 
   return 0
 }
 
 
-function template.simple {
-  : template.simple
-
+function template__simple {
   typeset i line character variable state=string
 
   {
@@ -148,22 +146,23 @@ function template.simple {
         character=${line:i:1}
 
         IFS=: read -r state variable < \
-          <(template.__simple.fsm "$state" "$character" "$variable")
+          <(template__p__simple__fsm "$state" "$character" \
+            "$variable")
       done
 
       IFS=: read -r state variable < \
-        <(template.__simple.fsm "$state" $'\n' "$variable")
+        <(template__p__simple__fsm "$state" $'\n' "$variable")
     done
 
     for ((i = 0; i < ${#line}; i++)); do
       character=${line:i:1}
 
       IFS=: read -r state variable < \
-        <(template.__simple.fsm "$state" "$character" "$variable")
+        <(template__p__simple__fsm "$state" "$character" "$variable")
     done
 
     IFS=: read -r state variable < \
-      <(template.__simple.fsm "$state" '' "$variable")
+      <(template__p__simple__fsm "$state" '' "$variable")
     
     [[ $state = 'error' ]] && return 1
   } 3>&1

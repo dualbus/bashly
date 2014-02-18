@@ -1,9 +1,7 @@
 #!/bin/bash
 
 
-function command.exists {
-  : command.exists
-
+function command__exists {
   typeset name=$1
 
   [[ -x $(type -P -- "$name") ]]

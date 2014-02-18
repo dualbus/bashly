@@ -1,3 +1,2 @@
-: output.spinner
-: output.progress-bar
-: output.color red "message"
+: output__spinner
+: output__progress_bar

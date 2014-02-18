@@ -1,9 +1,7 @@
 #!/bin/bash
 
 
-function shell.quote {
-  : shell.quote
-
+function shell__quote {
   typeset string=$1
   typeset quote="'"
 
@@ -11,9 +9,7 @@ function shell.quote {
 }
 
 
-function shell.double-quote {
-  : shell.double-quote
-
+function shell__double_quote {
   typeset string=$1
 
   string=${string//\\/\\\\}

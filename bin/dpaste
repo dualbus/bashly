@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-log.basic () 
+log__basic () 
 { 
     typeset argument;
     for argument in "$@";
@@ -7,63 +7,63 @@ log.basic ()
         printf '%s: %s\n' "${BASH_SOURCE##*/}" "$argument";
     done
 }
-log.debug () 
+log__debug () 
 { 
     typeset debug_level log_level;
     shift 2;
     if ((log_level >= debug_level)); then
-        log.with-type DEBUG "$@";
+        log__with_type DEBUG "$@";
     fi
 }
-log.error () 
+log__error () 
 { 
-    log.with-type ERROR "$@"
+    log__with_type ERROR "$@"
 }
-log.info () 
+log__info () 
 { 
-    log.with-type INFO "$@"
+    log__with_type INFO "$@"
 }
-log.warning () 
+log__warning () 
 { 
-    log.with-type WARNING "$@"
+    log__with_type WARNING "$@"
 }
-log.with-type () 
+log__with_type () 
 { 
     typeset type=$1 argument;
     shift;
     for argument in "$@";
     do
-        log.basic "$type: $argument" 1>&2;
+        log__basic "$type: $argument" 1>&2;
     done
 }
 
-common.die () 
+common__die () 
 { 
     typeset exit_status=$2;
-    log.error "$1";
+    log__error "$1";
     exit "${exit_status:-1}"
 }
 
-bytes.chr () 
+bytes__chr () 
 { 
     typeset dec=$1;
     ((0 <= dec && dec < 256)) || return 1;
     printf \\$((dec/64*100+dec%64/8*10+dec%8))
 }
-bytes.hex () 
+bytes__hex () 
 { 
     LC_CTYPE=C printf '%x' "'$1"
 }
-bytes.ord () 
+bytes__ord () 
 { 
     LC_CTYPE=C printf '%d' "'$1"
 }
-bytes.unhex () 
+bytes__unhex () 
 { 
     [[ $1 = ?([[:xdigit:]])[[:xdigit:]] ]] || return 1;
     printf '\x'"$1"
 }
-bytes.write-uint32-be () 
+bytes__write_uint32_be () 
 { 
     typeset number=$1;
     typeset hex;
@@ -71,7 +71,7 @@ bytes.write-uint32-be ()
     printf -v hex '\\x%x' "$(( (number >> 24)  & 0xff))" "$(( (number >> 16)  & 0xff))" "$(( (number >>  8)  & 0xff))" "$((  number         & 0xff))";
     printf "$hex"
 }
-bytes.write-uint32-le () 
+bytes__write_uint32_le () 
 { 
     typeset number=$1;
     typeset hex;
@@ -80,19 +80,19 @@ bytes.write-uint32-le ()
     printf "$hex"
 }
 
-network.socket-get-device () 
+network__socket_get_device () 
 { 
     typeset type=$1 netloc=$2 port=$3;
     [[ $type = @(tcp|udp) ]] || return 1;
-    [[ $netloc = @(*/*|..) ]] && return 1;
+    [[ $netloc = @(*/*|____) ]] && return 1;
     [[ $port = +([[:digit:]]) ]] || return 1;
     printf %s "/dev/$type/$netloc/$port"
 }
-network.tcp-send () 
+network__tcp-send () 
 { 
     typeset netloc=$1 port=$2;
     typeset line socket fd;
-    socket=$(network.socket-get-device tcp "$netloc" "$port") || return 1;
+    socket=$(network__socket_get_device tcp "$netloc" "$port") || return 1;
     ( exec 3<> "$socket";
     while IFS= read -r line; do
         printf '%s\n' "$line";
@@ -105,39 +105,38 @@ network.tcp-send ()
     exec 3>&- )
 }
 
-http.form-url-decode () 
+http__form_url_decode () 
 { 
     typeset data=${1//+/%20};
-    http.percent-decode "$data"
+    http__percent_decode "$data"
 }
-http.form-url-encode () 
+http__form_url_encode () 
 { 
     : application/x-www-form-urlencoded;
-    typeset data=$(http.percent-encode "$1");
+    typeset data=$(http__percent_encode "$1");
     printf %s "${data//%20/+}"
 }
-http.get () 
+http__get () 
 { 
     typeset url=$1;
     typeset scheme username password netloc port path query_string;
     typeset fragment resource IFS=:;
     typeset -a request=();
-    IFS=: read -r scheme _ _ netloc port path query_string _ < <(http.url-parse "$url");
+    IFS=: read -r scheme _ _ netloc port path query_string _ < <(http__url_parse "$url");
     resource=$path;
     [[ -n $query_string ]] && resource+=?$query_string;
     request+=("GET $resource HTTP/1.0");
     request+=("Host: $netloc");
     request+=('');
-    printf '%s\r\n' "${request[@]}" | network.tcp-send "$netloc" "$port"
+    printf '%s\r\n' "${request[@]}" | network__tcp_send "$netloc" "$port"
 }
-http.percent-decode () 
+http__percent_decode () 
 { 
     typeset data=${1//\\/\\\\};
     printf "${data//%/\\x}"
 }
-http.percent-encode () 
+http__percent_encode () 
 { 
-    : RFC3986;
     typeset character position data=$1;
     typeset -x LC_TYPE=C;
     for ((position=0; position<${#data}; position++))
@@ -146,17 +145,17 @@ http.percent-encode ()
         if [[ $character = [[:alnum:].~-] ]]; then
             printf %s "$character";
         else
-            printf %%%02X "$(bytes.ord "$character")";
+            printf %%%02X "$(bytes__ord "$character")";
         fi;
     done
 }
-http.post () 
+http__post () 
 { 
     typeset url=$1 form=$2;
     typeset scheme username password netloc port path query_string;
     typeset fragment resource IFS=:;
     typeset -a request=();
-    read -r scheme _ _ netloc port path query_string _ < <(http.url-parse "$url");
+    read -r scheme _ _ netloc port path query_string _ < <(http__url_parse "$url");
     resource=$path;
     [[ -n $query_string ]] && resource+=?$query_string;
     request+=("POST $resource HTTP/1.0");
@@ -165,9 +164,9 @@ http.post ()
     request+=("Content-Length: $((${#form}+2))");
     request+=('');
     request+=("$form");
-    printf '%s\r\n' "${request[@]}" | network.tcp-send "$netloc" "$port"
+    printf '%s\r\n' "${request[@]}" | network__tcp_send "$netloc" "$port"
 }
-http.query-string-encode () 
+http__query_string_encode () 
 { 
     :  <<EOD
   Converts an associative array (or a pair of normal arrays) to a
@@ -182,7 +181,7 @@ http.query-string-encode ()
 
   # Sample call
   typeset -A params=(['foo']=bar ['bar']=baz)
-  http.query-string-encode "${!params[@]}" "${params[@]}"
+  http__query_string_encode "${!params[@]}" "${params[@]}"
 EOD
 
     typeset middle=$(($#/2))
@@ -193,7 +192,7 @@ EOD
         separator='&';
     done
 }
-http.url-parse () 
+http__url_parse () 
 { 
     :  <<EOD
   Parses a URL into its components.
@@ -203,7 +202,7 @@ http.url-parse ()
 
   $scheme:$username:$password:$netloc:$port:$path:$query_string:$fragment
 
-  http.url-parse 'http://u:p@www.domain.com:8080/path/to/file.ext?q=s#frag'
+  http__url_parse 'http://u:p@www.domain.com:8080/path/to/file.ext?q=s#frag'
 EOD
 
     typeset url=$1 default_scheme=$2
@@ -267,8 +266,8 @@ EOD
 
 main () 
 { 
-    typeset content=$(http.form-url-encode "$(cat "${1:-/dev/stdin}")");
-    typeset query_string=$(http.query-string-encode content "$content");
+    typeset content=$(http__form_url_encode "$(cat "${1:-/dev/stdin}")");
+    typeset query_string=$(http__query_string_encode content "$content");
     typeset key value;
     { 
         read;
@@ -278,7 +277,7 @@ main ()
                 return 0;
             fi;
         done
-    } < <(http.post 'http://dpaste.com/api/v1/' "$query_string");
+    } < <(http__post 'http://dpaste.com/api/v1/' "$query_string");
     return 1
 }
 main "$@"

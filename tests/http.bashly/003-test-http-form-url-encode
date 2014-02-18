@@ -3,10 +3,10 @@
 : load http
 
 function test {
-  [[ $(http.form-url-encode '123') = '123' ]] || return 1
-  [[ $(http.form-url-encode 'abc') = 'abc' ]] || return 1
-  [[ $(http.form-url-encode ':;#') = '%3A%3B%23' ]] || return 1
-  [[ $(http.form-url-encode 'á') = 'á' ]] || return 1
+  [[ $(http__form_url_encode '123') = '123' ]] || return 1
+  [[ $(http__form_url_encode 'abc') = 'abc' ]] || return 1
+  [[ $(http__form_url_encode ':;#') = '%3A%3B%23' ]] || return 1
+  [[ $(http__form_url_encode 'á') = 'á' ]] || return 1
 
   return 0
 }

@@ -57,7 +57,7 @@
 
 function main {
   typeset base_url='http://lema.rae.es/drae/srv/search?val=%s'
-  typeset term=$(http.form-url-encode "$1")
+  typeset term=$(http__form_url_encode "$1")
 
   #printf -v url "$base_url" "$(printf %s "$term" | fuenc | recode ..ISO-8859-1)"
 

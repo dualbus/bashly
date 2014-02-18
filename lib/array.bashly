@@ -2,13 +2,11 @@
 
 # The interface for returning arrays:
 #
-# Output a NUL delimited list of elements. I'm sorry, but that's the
-# most correct way.
+# Output a NUL delimited list of elements__ I'm sorry, but that's the
+# most correct way__
 #
 
-function array.has-element {
-  : array.has-element
-
+function array__has_element {
   typeset element_to_search=$1 current_element;
   
   shift || return 1
@@ -22,19 +20,17 @@ function array.has-element {
 
 
 
-function array.__compare.numeric {
+function array__p__compare__numeric {
   (($1 < $2))
 }
 
 
-function array.__compare.lexicographic {
+function array__p__compare__lexicographic {
   [[ $1 < "$2" ]]
 }
 
 
-function array.__sort.bubble {
-  :
-
+function array__p__sort__bubble {
   typeset comparison=$1; shift
   typeset -a array=("$@")
   typeset length=$# i j temporary
@@ -50,21 +46,21 @@ function array.__sort.bubble {
 }
 
 
-function array.sort {
-  : array.sort
+function array__sort {
+  : array__sort
 
   typeset -a array=("$@")
 }
 
 
-function array.sort-numeric {
-  : array.sort-numeric
+function array__sort_numeric {
+  : array__sort_numeric
   
 }
 
 
-function array.reverse {
-  : array.reverse
+function array__reverse {
+  : array__reverse
 
   typeset element
   typeset -a reversed
@@ -77,20 +73,20 @@ function array.reverse {
 }
 
 
-function array.maximum {
+function array__maximum {
   :
 }
 
 
-function array.minimum {
+function array__minimum {
   :
 }
 
 
-function array.maximum-numeric {
+function array__maximum_numeric {
   :
 }
 
-function array.minimum-numeric {
+function array__minimum_numeric {
   :
 }

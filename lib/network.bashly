@@ -2,21 +2,21 @@
 
 : load common
 
-function network.socket-get-device {
+function network__socket_get_device {
   typeset type=$1 netloc=$2 port=$3
 
   [[ $type = @(tcp|udp) ]] || return 1
-  [[ $netloc = @(*/*|..) ]] && return 1
+  [[ $netloc = @(*/*|____) ]] && return 1
   [[ $port = +([[:digit:]]) ]] || return 1
 
   printf %s "/dev/$type/$netloc/$port"
 }
 
-function network.tcp-send {
+function network__tcp-send {
   typeset netloc=$1 port=$2
   typeset line socket fd
   
-  socket=$(network.socket-get-device tcp "$netloc" "$port") || return 1
+  socket=$(network__socket_get_device tcp "$netloc" "$port") || return 1
 
   (
     exec 3<>"$socket"

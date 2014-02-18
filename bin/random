@@ -1,178 +1,5 @@
 #!/usr/bin/env bash
-log.basic () 
-{ 
-    typeset argument;
-    for argument in "$@";
-    do
-        printf '%s: %s\n' "${BASH_SOURCE##*/}" "$argument";
-    done
-}
-log.debug () 
-{ 
-    typeset debug_level log_level;
-    shift 2;
-    if ((log_level >= debug_level)); then
-        log.with-type DEBUG "$@";
-    fi
-}
-log.error () 
-{ 
-    log.with-type ERROR "$@"
-}
-log.info () 
-{ 
-    log.with-type INFO "$@"
-}
-log.warning () 
-{ 
-    log.with-type WARNING "$@"
-}
-log.with-type () 
-{ 
-    typeset type=$1 argument;
-    shift;
-    for argument in "$@";
-    do
-        log.basic "$type: $argument" 1>&2;
-    done
-}
-
-common.die () 
-{ 
-    typeset exit_status=$2;
-    log.error "$1";
-    exit "${exit_status:-1}"
-}
-
-log.basic () 
-{ 
-    typeset argument;
-    for argument in "$@";
-    do
-        printf '%s: %s\n' "${BASH_SOURCE##*/}" "$argument";
-    done
-}
-log.debug () 
-{ 
-    typeset debug_level log_level;
-    shift 2;
-    if ((log_level >= debug_level)); then
-        log.with-type DEBUG "$@";
-    fi
-}
-log.error () 
-{ 
-    log.with-type ERROR "$@"
-}
-log.info () 
-{ 
-    log.with-type INFO "$@"
-}
-log.warning () 
-{ 
-    log.with-type WARNING "$@"
-}
-log.with-type () 
-{ 
-    typeset type=$1 argument;
-    shift;
-    for argument in "$@";
-    do
-        log.basic "$type: $argument" 1>&2;
-    done
-}
-
-cmdline.__arguments.long () 
-{ 
-    typeset argument=$1;
-    typeset name i arguments;
-    [[ -n $argument ]] || return 1;
-    shift;
-    { 
-        typeset -p long_map || return 2;
-        typeset -p arguments_map || return 2
-    } > /dev/null 2>&1;
-    name=${long_map["${argument#--}"]};
-    [[ -n $name ]] || { 
-        printf -- '- %s\0' "$argument" 1>&3;
-        return 3
-    };
-    arguments=${arguments_map["$name"]};
-    if ((arguments == 0)); then
-        printf '%s\0' "$name" 1>&3;
-        return 0;
-    else
-        if ((arguments > $#)); then
-            return 4;
-        fi;
-    fi;
-    for ((i = 1; i <= arguments; i++))
-    do
-        printf '%s %s\0' "$name" "${@:i:1}" 1>&3;
-        shift;
-    done;
-    printf %s "$arguments"
-}
-cmdline.__arguments.short () 
-{ 
-    typeset argument=$1;
-    typeset name i arguments;
-    [[ -n $argument ]] || return 1;
-    shift;
-    { 
-        typeset -p short_map || return 2;
-        typeset -p arguments_map || return 2
-    } > /dev/null 2>&1;
-    name=${short_map["${argument#-}"]};
-    [[ -n $name ]] || { 
-        printf -- '- %s\0' "$argument" 1>&3;
-        return 3
-    };
-    arguments=${arguments_map["$name"]};
-    if ((arguments == 0)); then
-        printf '%s\0' "$name" 1>&3;
-        return 0;
-    else
-        if ((arguments > $#)); then
-            return 4;
-        fi;
-    fi;
-    for ((i = 1; i <= arguments; i++))
-    do
-        printf '%s %s\0' "$name" "${@:i:1}" 1>&3;
-        shift;
-    done;
-    printf %s "$arguments"
-}
-cmdline.__arguments.short-composed () 
-{ 
-    typeset argument=$1;
-    typeset option remainder name arguments;
-    [[ -n $argument ]] || return 1;
-    shift;
-    { 
-        typeset -p short_map || return 2;
-        typeset -p arguments_map || return 2
-    } > /dev/null 2>&1;
-    option=${argument#-} option=${option::1};
-    remainder=${argument#-?};
-    name=${short_map["$option"]};
-    [[ -n $name ]] || { 
-        printf -- '- %s\0' "$argument" 1>&3;
-        return 3
-    };
-    arguments=${arguments_map["$name"]};
-    if ((arguments == 0)); then
-        printf '%s\0' "$name" 1>&3;
-        if [[ -n $remainder ]]; then
-            cmdline.__arguments.short-composed "-$remainder" "$@" || return;
-        fi;
-    else
-        [[ -n $remainder ]] && set -- "$remainder" "$@";
-        cmdline.__arguments.short "-$option" "$@" || return;
-    fi
-}
-cmdline.arguments () 
+cmdline__arguments () 
 { 
     :  <<EOD
   - name of argument
@@ -184,7 +11,7 @@ cmdline.arguments ()
   
   name=help:long=help:short=h:required=:arguments=0:help=show this help
   
-  cmdline.arguments 
+  cmdline__arguments 
 
   env vars:
 
@@ -248,7 +75,7 @@ EOD
         case $argument in 
             -[!-])
                 { 
-                    shift=$(cmdline.__arguments.short "$@") || { 
+                    shift=$(cmdline__p__arguments__short "$@") || { 
                         return_code=$?;
                         [[ -n $errors_not_fatal ]] || return "$return_code"
                     }
@@ -257,7 +84,7 @@ EOD
             ;;
             -[!-]*)
                 { 
-                    shift=$(cmdline.__arguments.short-composed "$@") || { 
+                    shift=$(cmdline__p__arguments__short_composed "$@") || { 
                         return_code=$?;
                         [[ -n $errors_not_fatal ]] || return "$return_code"
                     }
@@ -272,7 +99,7 @@ EOD
 }" "$@";
                 fi;
                 { 
-                    shift=$(cmdline.__arguments.long "$@") || { 
+                    shift=$(cmdline__p__arguments__long "$@") || { 
                         return_code=$?;
                         [[ -n $errors_not_fatal ]] || return "$return_code"
                     }
@@ -294,7 +121,7 @@ EOD
         esac;
     done
 }
-cmdline.help () 
+cmdline__help () 
 { 
     typeset option_description name long short required arguments help;
     typeset key value parameter;
@@ -346,6 +173,179 @@ cmdline.help ()
         fi;
     done
 }
+cmdline__p__arguments__long () 
+{ 
+    typeset argument=$1;
+    typeset name i arguments;
+    [[ -n $argument ]] || return 1;
+    shift;
+    { 
+        typeset -p long_map || return 2;
+        typeset -p arguments_map || return 2
+    } > /dev/null 2>&1;
+    name=${long_map["${argument#--}"]};
+    [[ -n $name ]] || { 
+        printf -- '- %s\0' "$argument" 1>&3;
+        return 3
+    };
+    arguments=${arguments_map["$name"]};
+    if ((arguments == 0)); then
+        printf '%s\0' "$name" 1>&3;
+        return 0;
+    else
+        if ((arguments > $#)); then
+            return 4;
+        fi;
+    fi;
+    for ((i = 1; i <= arguments; i++))
+    do
+        printf '%s %s\0' "$name" "${@:i:1}" 1>&3;
+        shift;
+    done;
+    printf %s "$arguments"
+}
+cmdline__p__arguments__short () 
+{ 
+    typeset argument=$1;
+    typeset name i arguments;
+    [[ -n $argument ]] || return 1;
+    shift;
+    { 
+        typeset -p short_map || return 2;
+        typeset -p arguments_map || return 2
+    } > /dev/null 2>&1;
+    name=${short_map["${argument#-}"]};
+    [[ -n $name ]] || { 
+        printf -- '- %s\0' "$argument" 1>&3;
+        return 3
+    };
+    arguments=${arguments_map["$name"]};
+    if ((arguments == 0)); then
+        printf '%s\0' "$name" 1>&3;
+        return 0;
+    else
+        if ((arguments > $#)); then
+            return 4;
+        fi;
+    fi;
+    for ((i = 1; i <= arguments; i++))
+    do
+        printf '%s %s\0' "$name" "${@:i:1}" 1>&3;
+        shift;
+    done;
+    printf %s "$arguments"
+}
+cmdline__p__arguments__short_composed () 
+{ 
+    typeset argument=$1;
+    typeset option remainder name arguments;
+    [[ -n $argument ]] || return 1;
+    shift;
+    { 
+        typeset -p short_map || return 2;
+        typeset -p arguments_map || return 2
+    } > /dev/null 2>&1;
+    option=${argument#-} option=${option::1};
+    remainder=${argument#-?};
+    name=${short_map["$option"]};
+    [[ -n $name ]] || { 
+        printf -- '- %s\0' "$argument" 1>&3;
+        return 3
+    };
+    arguments=${arguments_map["$name"]};
+    if ((arguments == 0)); then
+        printf '%s\0' "$name" 1>&3;
+        if [[ -n $remainder ]]; then
+            cmdline__p__arguments__short_composed "-$remainder" "$@" || return;
+        fi;
+    else
+        [[ -n $remainder ]] && set -- "$remainder" "$@";
+        cmdline__p__arguments__short "-$option" "$@" || return;
+    fi
+}
+
+log__basic () 
+{ 
+    typeset argument;
+    for argument in "$@";
+    do
+        printf '%s: %s\n' "${BASH_SOURCE##*/}" "$argument";
+    done
+}
+log__debug () 
+{ 
+    typeset debug_level log_level;
+    shift 2;
+    if ((log_level >= debug_level)); then
+        log__with_type DEBUG "$@";
+    fi
+}
+log__error () 
+{ 
+    log__with_type ERROR "$@"
+}
+log__info () 
+{ 
+    log__with_type INFO "$@"
+}
+log__warning () 
+{ 
+    log__with_type WARNING "$@"
+}
+log__with_type () 
+{ 
+    typeset type=$1 argument;
+    shift;
+    for argument in "$@";
+    do
+        log__basic "$type: $argument" 1>&2;
+    done
+}
+
+common__die () 
+{ 
+    typeset exit_status=$2;
+    log__error "$1";
+    exit "${exit_status:-1}"
+}
+
+log__basic () 
+{ 
+    typeset argument;
+    for argument in "$@";
+    do
+        printf '%s: %s\n' "${BASH_SOURCE##*/}" "$argument";
+    done
+}
+log__debug () 
+{ 
+    typeset debug_level log_level;
+    shift 2;
+    if ((log_level >= debug_level)); then
+        log__with_type DEBUG "$@";
+    fi
+}
+log__error () 
+{ 
+    log__with_type ERROR "$@"
+}
+log__info () 
+{ 
+    log__with_type INFO "$@"
+}
+log__warning () 
+{ 
+    log__with_type WARNING "$@"
+}
+log__with_type () 
+{ 
+    typeset type=$1 argument;
+    shift;
+    for argument in "$@";
+    do
+        log__basic "$type: $argument" 1>&2;
+    done
+}
 
 main () 
 { 
@@ -365,22 +365,22 @@ main ()
                 source=$value
             ;;
             help)
-                cmdline.help "${options[@]}"
+                cmdline__help "${options[@]}"
             ;;
             *)
-                common.die "unexpected ''$value''"
+                common__die "unexpected ''$value''"
             ;;
         esac;
-    done < <(cmdline.arguments "${options[@]}" -- "$@");
-    log.debug "type: $type";
-    log.debug "length: $length";
-    log.debug "source: $source";
+    done < <(cmdline__arguments "${options[@]}" -- "$@");
+    log__debug "type: $type";
+    log__debug "length: $length";
+    log__debug "source: $source";
     case $type in 
         xdigit | alnum | alpha | digit)
             printf '%s\n' "$(tr -cd "[:$type:]" < "$source" | head -c "$length")"
         ;;
         *)
-            common.die "wrong type ''$type''"
+            common__die "wrong type ''$type''"
         ;;
     esac
 }
