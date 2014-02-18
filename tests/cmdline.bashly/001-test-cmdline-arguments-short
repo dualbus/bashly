@@ -1,7 +1,6 @@
 #!/bin/bash
 
-:load cmdline
-
+: load cmdline
 
 function r {
   typeset shift result

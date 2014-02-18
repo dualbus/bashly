@@ -1,4 +1,6 @@
-:load bytes
+#!/bin/bash
+
+: load bytes
 
 function 2x {
   od -t x1 -An -v | tr -d '[:space:]'

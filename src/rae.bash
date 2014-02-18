@@ -1,6 +1,6 @@
 #!/bin/bash
 
-:load http
+: load http
 
 #recode() {
 #    local -a args=()

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-:load cmdline
+: load cmdline
 
 function main {
   : <<EOD

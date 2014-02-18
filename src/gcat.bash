@@ -1,7 +1,7 @@
 #!/bin/bash
 
-:load common
-:load cmdline
+: load common
+: load cmdline
 
 
 function escape-line {

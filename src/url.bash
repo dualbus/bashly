@@ -1,7 +1,7 @@
 #!/bin/bash
 
-:load http
-:load cmdline
+: load http
+: load cmdline
 
 function main {
   typeset IFS 

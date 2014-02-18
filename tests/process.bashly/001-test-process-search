@@ -1,4 +1,6 @@
-:load process
+#!/bin/bash
+
+: load process
 
 function test {
   process.search bash >/dev/null || return 1

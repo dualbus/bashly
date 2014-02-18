@@ -1,6 +1,6 @@
 #!/bin/bash
 
-:load http
+: load http
 
 function test {
   [[ $(http.form-url-encode '123') = '123' ]] || return 1

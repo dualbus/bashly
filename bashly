@@ -46,23 +46,23 @@ typeset -A bashlies=()
 # command.
 #
 # Currently, these are the defined triggers:
-# - :load <library-name-without-extension>
+# - : load <library-name-without-extension>
 #
 # Make sure to not use that name in your applications.
 function __b7ab299a__command_dispatcher {
-  typeset bash_command=$1 IFS trigger rest
+  typeset bash_command=$1 IFS prefix trigger rest
 
   unset IFS
 
-  read -r trigger rest <<< "$bash_command"
+  read -r prefix trigger rest <<< "$bash_command"
 
-  [[ $trigger = :* ]] || {
+  [[ $prefix = : ]] || {
     bashly_code_lines+=("$bash_command")
     return 1
   }
 
-  case $trigger in
-    :load)
+  case "$prefix $trigger" in
+    ': load')
       __b7ab299a__load_bashly "$rest";;
   esac
 

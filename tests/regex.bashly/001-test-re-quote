@@ -1,5 +1,7 @@
-:load bytes
-:load regex
+#!/bin/bash
+
+: load bytes
+: load regex
 
 function test {
   typeset i character regex

@@ -1,4 +1,6 @@
-:load shell
+#!/bin/bash
+
+: load shell
 
 function test {
   [[ $(shell.double-quote 'a"b') = '"a\"b"' ]] || return 1

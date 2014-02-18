@@ -1,6 +1,6 @@
 #!/bin/bash
 
-:load log
+: load log
 
 function common.die {
   typeset exit_status=$2

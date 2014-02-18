@@ -1,6 +1,6 @@
 #!/bin/bash
 
-:load http
+: load http
 
 function main {
   typeset content=$(http.form-url-encode "$(cat "${1:-/dev/stdin}")")

@@ -1,4 +1,6 @@
-:load template
+#!/bin/bash
+
+: load template
 
 function test {
   [[ $(printf 'foo'      | foo=bar template.simple) = 'foo'  ]] || return 1

@@ -1,8 +1,8 @@
 #!/bin/bash
 
-:load common
-:load log
-:load cmdline
+: load common
+: load log
+: load cmdline
 
 function main {
   typeset type_ value

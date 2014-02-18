@@ -1,4 +1,6 @@
-:load format.csv
+#!/bin/bash
+
+: load format.csv
 
 function test {
   typeset result

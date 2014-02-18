@@ -1,4 +1,6 @@
-:load bytes
+#!/bin/bash
+
+: load bytes
 
 function test {
   typeset newline

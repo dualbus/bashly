@@ -1,6 +1,6 @@
 #!/bin/bash
 
-:load http
+: load http
 
 function test {
   [[ $(http.query-string-encode a b 1 2) = 'a=1&b=2' ]] || return 1

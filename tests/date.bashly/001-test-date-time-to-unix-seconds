@@ -1,7 +1,6 @@
 #!/bin/bash
 
-:load date
-
+: load date
 
 function test {
 

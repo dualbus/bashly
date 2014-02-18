@@ -41,7 +41,7 @@ So, what can be done within bashly to deal with this?
 Options:
 
 - Introduce a name rewriting feature that get's triggered on load
-  time, so, the user just writes: '':load json as json_a'', which
+  time, so, the user just writes: '': load json as json_a'', which
   then loads ''json'' rewriting all the json.* functions to json_a.*.
 
 - What else?
