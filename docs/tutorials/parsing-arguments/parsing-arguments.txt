@@ -1,0 +1,95 @@
+Parsing arguments with bashly
+=============================
+
+Welcome to this tutorial. We'll see how to simplify argument parsing
+with the cmdline bashly module.
+
+If you already know what argument parsing means, then skip to the
+tutorial. If you do not, please read and understand the following
+explanation.
+
+The traditional UNIX environment is operated using a command line
+interface. This means that you, the user, instruct the computer using
+a specialized language, which is the command language. The shell is
+the program that interprets these commands, and converts them into
+machine instructions. Think of the shell as a little person that
+understands two languages, the "command language" (CL) and "machine
+language" (ML), and converts from CL to ML, and back from ML to CL.
+This little person is your helper in the UNIX world. It'll tell your
+OS what you want to do, and how.
+
+Bash happens to be such little person (there are many others though,
+dash, zsh, mksh, even foreign ones, like csh). So, bash will be your
+helper. You type commands into your terminal (which is a different
+program from bash, though bash uses it to interact with you), bash
+receives the commands, it interprets part of the commands, and
+decides what to do. The most simple case of command is launching a
+program with *arguments*. An example:
+
+$ ls -l file directory another-directory
+
+In this case, ''ls'' is the program to be launched, and this program
+will receive information, in the form of arguments, which are:
+
+- ''-l''
+- ''file''
+- ''directory''
+- ''another-directory''
+
+Now, you'll ask, how can bash tell them apart? It uses space as an
+argument separator.
+
+Now, the ''-l'', ''file'', and the rest of the arguments are NOT
+interpreted by bash. Bash just splits the command into multiple
+pieces, determines which program it should launch, and passes these
+arguments to the program. The program will be responsible of the
+interpretation of these arguments. And that's what we'll learn today.
+How to interpret the passed arguments within our programs (scripts).
+
+So, enjoy.
+
+
+
+Tutorial
+--------
+
+First, we'll cover the types of arguments your program can receive.
+Please keep in mind that there are multiple conventions to pass
+around options, but we'll just stick to the more popular ones, which
+are the short options (which look like -f, -a, ...) and the GNU-style
+long options (which resemble --file, --address, ...).
+
+So, in short, your program can receive three types of arguments:
+
+- short options
+- long options
+- positional arguments
+
+Both short and long options are also called "flags", "switches",
+"toggles", and many other names. Typically, these are *optional*
+(that means the program does not require them to be specified to
+work). On the other hand, positional arguments are usually required.
+At least some of them.
+
+Let's look at the cp command, for example:
+
+| $ cp --help
+| Usage: cp [OPTION]... [-T] SOURCE DEST
+|   or:  cp [OPTION]... SOURCE... DIRECTORY
+|   or:  cp [OPTION]... -t DIRECTORY SOURCE...
+| Copy SOURCE to DEST, or multiple SOURCE(s) to DIRECTORY.
+| ...
+
+First, note that the first word is ''cp'', followed by a space. This
+is the name of the program, which will be looked in your computer by
+bash to be executed by the operating system. In all the cases,
+''[OPTION]'' follows, which denotes that *optional* arguments
+(options) go after the program name. The square brackets denote
+optional arguments. Then follows an optional ''-T'' flag, which
+forces ''cp'' to treat ''DEST'' as a normal file. Then ''SOURCE'' and
+''DEST'' come, which are the positional arguments, and in this case,
+required (they're not around square brackets).
+
+So, let's see how we can emulate this using cmdline.
+
+
