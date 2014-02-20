@@ -1,2 +1,20 @@
+#!/bin/bash
+
 : output__spinner
 : output__progress_bar
+
+function output__color {
+  typeset color=$1 message=${2:-"$(cat /dev/stdin)"}
+  typeset -A colors=(
+  ['black']=0   ['red']=1   ['green']=2
+  ['yellow']=3  ['blue']=4  ['magenta']=5
+  ['cyan']=6    ['white']=7
+  )
+
+  [[ ${colors["$color"]} ]] || return 1
+
+  printf '%s%s%s' \
+    "$(tput setaf "${colors["$color"]}")" \
+    "$message" \
+    "$(tput sgr0)"
+}
