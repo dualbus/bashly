@@ -4,17 +4,20 @@
   - Implement JSON parser
   - Implement color handling
   - Add dynamic loading ': load' function.
+  - Implement array sort (with bubble sort)
 
 
 0.2 release, *2014-03-31:
   - Implement INI parser
   - Implement mustache templating
   - Implement library to send mail from bash (using /dev/tcp)
+  - Complete at least 80% test coverage.
 
 
 0.3 release, *2014-04-30:
   - Implement MD5/SHA1 (native and with od)
   - Implement Base64 encoding (native and with od)
+  - Complete at least 90% test coverage.
 
 
 0.4 release, *2014-05-31:

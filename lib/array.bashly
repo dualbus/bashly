@@ -2,8 +2,8 @@
 
 # The interface for returning arrays:
 #
-# Output a NUL delimited list of elements__ I'm sorry, but that's the
-# most correct way__
+# Output a NUL delimited list of elements. I'm sorry, but that's the
+# most correct way.
 #
 
 function array__has_element {
@@ -38,24 +38,24 @@ function array__p__sort__bubble {
   for ((i = 0; i < length; i++)); do
     for ((j = i; j < length; j++)); do
       if "$comparison" "${array[i]}" "${array[j]}"; then
-        :
+        temporary=${array[i]}
+        array[i]=${array[j]}
+        array[j]=$temporary
       fi
     done
   done
 
+  printf '%s\0' "${array[@]}"
 }
 
 
 function array__sort {
-  : array__sort
-
-  typeset -a array=("$@")
+  array__p__sort__bubble array__p__compare__lexicographic "$@"
 }
 
 
 function array__sort_numeric {
-  : array__sort_numeric
-  
+  array__p__sort__bubble array__p__compare__numeric "$@"
 }
 
 

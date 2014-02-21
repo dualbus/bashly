@@ -110,3 +110,27 @@ EOD
 
   [[ $masked_address = "$masked_base" ]]
 }
+
+
+function ipv4__is_valid {
+  typeset dot=$1
+  typeset octet octet0 octet1 octet2 octet3
+
+  IFS=. read -r octet0 octet1 octet2 octet3 <<< "$dot"
+
+  for octet in "$octet0" "$octet1" "$octet2" "$octet3"; do
+    if [[ $octet = *[![:digit:]]* ]]; then
+      return 1
+    fi
+
+    if ((octet < 0)); then
+      return 2
+    fi
+
+    if ((octet > 255)); then
+      return 3
+    fi
+  done
+
+  return 0
+}
