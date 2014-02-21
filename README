@@ -1,32 +1,86 @@
 bashly
 ======
 
-This project, bashly, is yet another attempt of a library of reusable
-bash functions. Though its development is driven by the following
-core principles:
 
-- Encapsulate all state within the functions (no global variables)
-- Avoid ''eval'' at all costs. It is really hard to read scripts that
-  (ab)use eval, and even more difficult to maintain. There are also
-  security risks associated to the use of eval.
-- Avoid external commands, bashly attempts to be standalone. The only
-  commands that are going to be used are: od (it's POSIX, and to
-  overcome the binary stream handling of bash). This should make it
-  very portable across systems where bash is available.
-- Lots of tests. Code should be written with testability in mind.
-- Follow best practices for bash programming.
-- Make it easy to create stand-alone scripts that are linked to the
-  bashly modules, but also make it easy to update linked scripts.
+About
+-----
+
+Bashly is a collection of solutions to common problems that arise
+when writing scripts in the bash shell. You can call it a library.
+Just keep in mind that reusable bash code is hard, so it might not be
+that pretty to use.
+
+It's focused on bash versions greater or equal to 4.
 
 
-The modules (or libraries) reside in the lib/ hierarchy. They have
-the bashly extension, to easily identify them as libraries. Each
-library should have its own battery of tests under the test/
-hierarchy. Also, each library should have its own documentation under
-docs/lib.
+Downloads
+----------
 
-You will find sample scripts based on bashly under the src/
-directory, with their "linked" forms under bin/
+Currently, the only available form of download is through Github, by:
+(1) cloning the repository from the master branch, (2) downloading a
+compressed archive of the repository, (3) downloading the specific
+files that you want to use, manually.
 
 
-Feed-back in the form of issues is greatly appreciated.
+Documentation
+-------------
+
+You will find documentation regarding bashly in the docs/ directory.
+Consider the fact that bashly is a work in progress, so you might
+find many undocumented things currently (sorry about that, I hope
+this is changed soon).
+
+You will find the following sets of documentation:
+
+- lib/: This is the documentation for the modules in bashly. It
+  ranges from documenting function parameters and return codes, to
+  the presentation of simple usage examples of the functions.
+
+- meta/: Meta is the place for discussions regarding the development
+  of bashly itself, like naming convention, parameter passing
+  conventions (and hacks!), and related topics.
+
+- tutorials/: This is a more free form repository of tutorials for
+  various parts of bashly, and even an attempt at a bash tutorial
+  driven by examples. This directory also contains a more in-depth
+  introduction to bashly.
+
+
+News
+----
+
+You can watch the bashly repository for updates on this work.
+Currently there's no official new's feed in a more convenient form.
+
+
+Testing
+-------
+
+
+Some of the modules in bashly are covered by unit tests. The ideal
+would be to increase the coverage to 100%, so that every bit of code
+inside bashly is tested. It's also important to take into account the
+version of bash used to do the tests.
+
+
+Contributing
+------------
+
+Any form of contribution is welcome. Though the following things may
+apply:
+
+- For code contributions, expect some discussion, if the code somehow
+  does not fit the currently unwritten expectations for code (naming,
+  tests, purpose, etc.).
+
+- For bug reports, please provide at least the following information:
+  (1) bashly version (the commit SHA-1 is sufficient), (2) a script
+  that reproduces the issue, (3) if the scripts requires some input
+  file to work, please provide the necessary input for it to work,
+  (4) output is also important, and (5) an explanation of how the
+  output doesn't match the expected result.
+
+- For feature requests, please provide a justification of the
+  feature. For example, it could be interesting to see an
+  implementation of bash on top of bash, but that would not be very
+  useful for the majority of script writers, will it?
