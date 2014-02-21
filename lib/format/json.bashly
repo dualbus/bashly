@@ -1,0 +1,170 @@
+#!/bin/bash
+
+# WIP!!! Does not work.
+
+function parse_value {
+  typeset shift
+
+  printf '%s\n' "$@"
+  case $1 in
+    'structural:{')
+      shift=$(parse_object "$@");
+      shift "${shift:-0}"
+      ;;
+    '') ;;
+  esac
+}
+
+function parse_object { :; }
+function array { :; }
+function number { :; }
+function string { :; }
+function boolean { :; }
+function null { :; }
+
+function lex {
+  typeset length line
+  typeset state buffer
+
+  state=zero
+
+  while IFS= read -r line; do
+    length=${#line}
+
+    for ((i = 0; i < length; i++)); do
+      character=${line:i:1}
+
+      case $state in
+        zero)
+          case $character in
+            []{}:,[]) printf '%s\0' "structural:$character";;
+            \") state=string;;
+            -)
+              buffer=-
+              state=number;;
+            0)
+              buffer=0
+              state=check_decimal_number;;
+            [1-9])
+              buffer=$character
+              state=integer_number;;
+          esac
+          ;;
+
+        string)
+          case $character in
+            \\) state=escaped_string;;
+            \")
+              printf '%s\0' "string:$buffer"
+              buffer=
+              state=zero;;
+            *) buffer+=$character;;
+          esac
+          ;;
+
+        escaped_string)
+          buffer+=$character
+          state=string
+          ;;
+
+        number)
+          case $character in
+            0)
+              buffer+=0
+              state=check_decimal_number;;
+            [1-9])
+              buffer+=$character
+              state=integer_number;;
+          esac
+          ;;
+
+        check_decimal_number)
+          case $character in
+            .)
+              buffer+=.
+              state=decimal_number;;
+            []{}:,[])
+              printf '%s\0' "number:$buffer";
+              printf '%s\0' "structural:$character";
+              state=zero; buffer=;;
+            [[:space:]])
+              printf '%s\0' "number:$buffer";
+              state=zero; buffer=;;
+          esac
+          ;;
+
+        integer_number)
+          case $character in
+            [0-9]) buffer+=$character;;
+            .)
+              buffer+=.
+              state=decimal_number;;
+            []{}:,[])
+              printf '%s\0' "number:$buffer";
+              printf '%s\0' "structural:$character";
+              state=zero; buffer=;;
+            [[:space:]])
+              printf '%s\0' "number:$buffer";
+              state=zero; buffer=;;
+          esac
+          ;;
+
+        decimal_number)
+          case $character in
+            [0-9]) buffer+=$character;;
+            [eE])
+              buffer+=$character;
+              state=decimal_number_exponent;;
+            []{}:,[])
+              printf '%s\0' "number:$buffer";
+              printf '%s\0' "structural:$character";
+              state=zero; buffer=;;
+            [[:space:]])
+              printf '%s\0' "number:$buffer";
+              state=zero; buffer=;;
+          esac
+          ;;
+
+        decimal_number_exponent)
+          case $character in
+            [-+0-9])
+              buffer+=$character;
+              state=decimal_number_exponent_magnitude;;
+            []{}:,[])
+              printf '%s\0' "number:$buffer";
+              printf '%s\0' "structural:$character";
+              state=zero; buffer=;;
+            [[:space:]])
+              printf '%s\0' "number:$buffer";
+              state=zero; buffer=;;
+          esac
+          ;;
+
+        decimal_number_exponent_magnitude)
+          case $character in
+            [0-9]) buffer+=$character;;
+            []{}:,[])
+              printf '%s\0' "number:$buffer";
+              printf '%s\0' "structural:$character";
+              state=zero; buffer=;;
+            [[:space:]])
+              printf '%s\0' "number:$buffer";
+              state=zero; buffer=;;
+          esac
+          ;;
+      esac
+    done
+  done
+}
+
+function parse {
+  typeset -a tokens
+
+  while IFS= read -rd '' token; do
+    tokens+=("$token")
+  done < <(lex)
+
+  parse_value "${tokens[@]}"
+}
+
+parse
