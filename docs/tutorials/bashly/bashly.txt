@@ -1,0 +1,132 @@
+Introduction to programming with bashly
+=======================================
+
+Writing good shell scripts is hard. Mostly because we find ourselves
+rewriting the same things again and again. Reusability in bash is
+usually just "copy this part from a working script and adapt". This
+is prone to errors, and also tedious to keep up-to-date. What if we
+change the original script to fix a bug, and now we also have to
+change ALL the scripts that were based on that piece of code.
+
+Yes, you can use the '.' (or 'source') command to load a script,
+which contains the functions you use commonly in your scripts. But
+what happens if you want to distribute your script? Should you
+distribute both the library and the script? What if you merge them
+into one file? What happens when you update the library? ... and so
+on. There are some issues with this approach.
+
+Now, I present you: bashly. Bashly is an attempt to make reusable
+bash functions (yes, so you no longer have to copy-paste code), but
+it also attempts to reduce the complexity of managing stand-alone
+scripts that are the union of library code and script-specific code.
+
+It works like this:
+
+
+| #!/bin/bash
+|
+| : load date
+| 
+| function main {
+|   # local variables
+|   typeset date time IFS
+|   typeset year month day
+|   typeset hour minute second
+| 
+|   # split our input that looks like '2013-01-01 10:22:13' into two
+|     fields, date and time.
+|         read -r date time <<< "$1"
+|
+|
+|   # further split the date and time strings into their components.
+|   IFS=- read -r year month day <<< "$date"
+|   IFS=: read -r hour minute second <<< "$time"
+| 
+|   # call the library function.
+|   date__time_to_unix_seconds "$year" "$month" "$day" \
+|     "$hour" "$minute" "$second"
+| 
+|   # output trailing newline.
+|   printf '\n'
+| }
+| 
+| main "$@"
+
+
+So, what's this ': load date'? Can I feed the script directly to
+bash? The answer to the second question is: No. To answer the first
+one: It's a loading mechanism similar to 'source', but when used with
+the bashly tool, instead of bash, it just joins all the required
+functions into a single stand-alone file. So in the end, it becomes
+something like:
+
+| library code ...
+| your code ...
+
+In a single file.
+
+
+Ok, now, how do I do that? Well:
+
+1.- Put your code in a file.
+2.- Tell bashly where it can find the bashly libraries, using the
+    BASHLY_PATH variable.
+3.- Let bashly "compile" your code.
+
+It looks something like this:
+
+$ BASHLY_PATH=/path/to/bashly/lib /path/to/bashly/bashly input.bash output
+
+(If you want to see a more advanced example, check the makefile
+inside the src/ directory).
+
+Let's try this with a simple example:
+
+Create a library, named 'tutorial' (with the bashly extension),
+containing a single function 't', that writes 'hello'.
+
+> dualbus@debian:~$ mkdir tutorial && cd tutorial
+> dualbus@debian:~/tutorial$ cat > tutorial.bashly
+> function t {
+>     echo hello
+> }
+
+Write our 'script', which loads the 'tutorial' library, and in its
+main function, calls the 't' function.
+> dualbus@debian:~/tutorial$ cat > script
+> : load tutorial
+> 
+> function main {
+>     t
+> }
+> 
+> main
+
+Compile our script, telling bashly where to find our libraries
+(tutorial.bashly, which is in the current directory)
+> dualbus@debian:~/tutorial$ BASHLY_PATH=. ~/.bashly/bashly ./script 
+> t () 
+> { 
+>     echo hello
+> }
+> 
+> main () 
+> { 
+>     t
+> }
+> main
+
+As you can see, bashly mashed together both the library code and the
+script code, so yo can just conveniently:
+> dualbus@debian:~/tutorial$ BASHLY_PATH=. ~/.bashly/bashly ./script | bash -s
+> hello
+
+Or write the "compiled" script to a different file, and distribute
+that file. If a library gets updated, instead of manually patching
+your stand-alone script, you just re-run bashly.
+
+Now, that's all there is to bashly! Go on and check the
+documentation, to see which functions are already included with
+bashly.
+
+Happy bashing!
