@@ -32,18 +32,27 @@ this is changed soon).
 
 You will find the following sets of documentation:
 
-- lib/: This is the documentation for the modules in bashly. It
-  ranges from documenting function parameters and return codes, to
-  the presentation of simple usage examples of the functions.
 
-- meta/: Meta is the place for discussions regarding the development
-  of bashly itself, like naming convention, parameter passing
+- [Library](docs/lib/)
+
+  This is the documentation for the modules in bashly. It ranges from
+  documenting function parameters and return codes, to the
+  presentation of simple usage examples of the functions.
+
+
+- [Meta](docs/meta/)
+
+  Meta is the place for discussions regarding the development of
+  bashly itself, like naming convention, parameter passing
   conventions (and hacks!), and related topics.
 
-- tutorials/: This is a more free form repository of tutorials for
-  various parts of bashly, and even an attempt at a bash tutorial
-  driven by examples. This directory also contains a more in-depth
-  introduction to bashly.
+
+- [Tutorials](docs/tutorials/)
+
+  This is a more free form repository of tutorials for various parts
+  of bashly, and even an attempt at a bash tutorial driven by
+  examples. This directory also contains a more in-depth introduction
+  to bashly.
 
 
 News
