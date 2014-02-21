@@ -176,6 +176,6 @@ trap '
   fi
   ' DEBUG
 
-source "$1"
+PATH= source "$1"
 
 __b7ab299a__compile_script
