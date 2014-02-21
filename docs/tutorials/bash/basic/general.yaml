@@ -1,0 +1,377 @@
+---
+
+# input/output
+- 
+  command: echo hello
+  effects: outputs 'hello' to the screen
+-
+  command: printf '%s\n' hello
+  effects: outputs 'hello' to the screen
+-
+  command: read -rp 'Tell me your name> ' name
+  effects: prompts the user for sie name, and stores it in a variable named 'name'
+-
+  command: while IFS= read -r line; do printf '%s\n' "$line"; done < file
+  effects: reads file line-by-line, and outputs the read lines to the screen
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+
+# variables
+-
+  command: name=value
+  effects: stores the value 'value' in the variable named 'name'
+  notes: there are no spaces around the '=' sign, this is required.
+-
+  command: name='value with spaces'
+  effects: |
+    Stores the value 'value with spaces' in the variable named 'name'
+  notes: |
+    To preserve the spaces when expanding the variable, surround it
+    with double quotes ("$name")
+-
+  command: name="value with spaces"
+  effects: stores the value 'value with spaces' in the variable named 'name'
+  notes: |
+    The difference between double and single quotes is that double
+    quotes permit expansions, single do not.
+-
+  command: echo "$name"
+  effects:
+-
+  command: echo $name
+  effects: |
+    Expands to the value of 'name', and after the expansion, the
+    shell "splits" the value into multiple tokens using
+  warnings: |
+    DO NOT use this form of expansion. It'll usually make your script
+    incorrect. For example, if you're using variables to store
+    filenames, and the filenames happen to include spaces, then your
+    script will break if you do not quote your expansions.
+-
+  command: name=$(command arg1 arg2)
+  effects: stores the output of 'command' in a variable named 'name'.
+  notes: |
+    Trailing newline characters are removed from the output of
+    'command'.
+-
+  command: name=(a b c)
+  effects: |
+    Creates an array variable named 'name', and initializes it with
+    three values; 'a', 'b', and 'c'.
+-
+  command: name=('a b c' '1 2 3')
+  effects: |
+    Creates an array variable named 'name', and initializes it with
+    two values; 'a b c', and '1 2 3'.
+-
+  command: name=([1]=123 [10]=abc)
+  effects: |
+    Creates an array variable named 'name', and makes it sparse, by
+    assigning non-contiguous elements
+-
+  command: echo "${name[0]}"
+  effects:
+-
+  command: echo "${name[@]}"
+  effects:
+-
+  command: printf '%s\n' "${name[@]}"
+  effects:
+-
+  command: printf '<%s>' "${name[@]}"; printf '\n'
+  effects:
+-
+  command: declare -A name=(['foo']=1 ['bar']=2)
+  effects: |
+    Creates an associative array variable named 'name', and stores
+    two values: (key: 'foo', value: 1) and (key: 'bar', value: 2).
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+
+
+# decisions
+-
+  command: if true; then echo yes; fi
+  effects:
+-
+  command: if false; then echo yes; fi
+  effects:
+-
+  command: if false; then echo yes; else echo no; fi
+  effects:
+-
+  command: if (( 5 > 4 )); then echo 5 is more than 4; fi
+  effects:
+-
+  command: if grep -q foo <<< 'foobar'; then echo 'foobar contains foo'; fi
+  effects:
+-
+  command: if command | grep -q something; then echo 'command output something'; fi
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+
+# loops
+-
+  command: for value in a b c; do echo "$value"; done
+  effects: Outputs 'a', 'b', and 'c', each on its own line.
+-
+  command: for file in ./*.mp3; do echo "$file"; done
+  effects:
+-
+  command: for file in ./*.[Mm][Pp]3; do echo "$file"; done
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+
+# redirections
+-
+  command: echo foo > file
+  effects:
+-
+  command: echo foo >file 2>&1
+  effects:
+-
+  command: >file
+  effects:
+-
+  command: cat <<< 'foo bar'
+  effects:
+-
+  command: cat < file
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+
+
+# strings
+-
+  command: IFS=: read -r left right <<< "a:b"
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
+-
+  command:
+  effects:
