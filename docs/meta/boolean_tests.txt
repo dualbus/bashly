@@ -1,0 +1,9 @@
+How to do boolean tests
+=======================
+
+The possibilities:
+
+1.- true: ''var=y'', false: ''var='', test with [[ $var ]]
+2.- true: ''var=1'', false: ''var=0'' (or ''var=''), test with ((var))
+
+(1) is faster

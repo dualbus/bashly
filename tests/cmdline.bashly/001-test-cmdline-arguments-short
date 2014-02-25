@@ -3,36 +3,17 @@
 : load cmdline
 
 function r {
-  typeset shift result
+  "$@" 3>&1 | od -t x1 -An -v | tr -d '[:space:]'
 
-  shift=$("$@" 3>/dev/null)
-  result=$("$@" 3>&1 >/dev/null | od -t x1 -An -v | tr -d '[:space:]')
-
-  printf '%u:%s' "$shift" "$result"
+  return "${PIPESTATUS[0]}"
 }
 
-
 function test {
-  typeset -A short_map
-  typeset -A arguments_map
+  [[ $(r cmdline__p__arguments__short 'x:x:x:1' -x a) = "$(r printf '2x:a\0')" ]] || return 1
+  [[ $(r cmdline__p__arguments__short 'x:x:x:0' -x  ) = "$(r printf '1x\0')"   ]] || return 1
 
-
-  short_map=(['x']=x) arguments_map=(['x']=1)
-  [[ $(r cmdline__p__arguments__short -x a) = '1:78206100' ]] || return 1
-
-  : 'missing arguments'
-  short_map=(['x']=x) arguments_map=(['x']=2)
-  cmdline__p__arguments__short -x a >/dev/null 3>&1
-  (($? == 4)) || return 1
-
-  : 'unspecified option'
-  short_map=() arguments_map=()
-  cmdline__p__arguments__short -x a >/dev/null 3>&1
-  (($? == 3)) || return 1
-
-  : 'unspecified option (which)'
-  short_map=() arguments_map=()
-  [[ $(r cmdline__p__arguments__short -x a) = '0:2d202d7800' ]] || return 1
+  r cmdline__p__arguments__short 'x:x:x:1' -y >/dev/null && return 1
+  r cmdline__p__arguments__short 'x:x:x:1' -x >/dev/null && return 1
 
   return 0
 }

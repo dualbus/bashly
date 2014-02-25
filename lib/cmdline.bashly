@@ -1,145 +1,161 @@
 #!/bin/bash
 
+: load object
+
 
 function cmdline__p__arguments__short {
-  typeset argument=$1
-  typeset name i arguments
+  typeset short
+  typeset name
+  typeset arguments
+  typeset i
+  typeset -a options
+  typeset -A arguments_table
+  typeset -A name_table
 
-  [[ $argument ]] || return 1
+  IFS=';' read -ra options <<< "$1"; shift
+
+  for option in "${options[@]}"; do
+    IFS=':' read -r name short _ arguments <<< "$option"
+    arguments_table["$short"]=$arguments
+    name_table["$short"]=$name
+  done
+
+  [[ $1 = -[!-] ]] || return 1
+
+  [[ ${arguments_table["${1#-}"]+set} ]] || return 1
+  [[ ${name_table["${1#-}"]+set} ]] || return 1
+
+  arguments=${arguments_table["${1#-}"]}
+  name=${name_table["${1#-}"]}
 
   shift
 
-  {
-    typeset -p short_map || return 2
-    typeset -p arguments_map || return 2
-  } >/dev/null 2>&1
+  ((arguments <= $#)) || return 1
 
-  name=${short_map["${argument#-}"]}
+  printf %s "$((arguments + 1))"
 
-  [[ $name ]] || {
-    printf -- '- %s\0' "$argument" >&3
-    return 3
-  }
-
-  arguments=${arguments_map["$name"]}
-
-  if ((arguments == 0)); then
-    printf '%s\0' "$name" >&3; return 0
-  elif ((arguments > $#)); then
-    return 4
-  fi
-  
-  for ((i = 1; i <= arguments; i++)); do
-    printf '%s %s\0' "$name" "${@:i:1}" >&3
-
-    shift
-  done
-
-  printf %s "$arguments"
+  if ((arguments > 0)); then
+    for ((i = 1; i <= arguments; i++)); do
+      printf '%s:%s\0' "$name" "${!i}"
+    done
+  else
+    printf '%s\0' "$name"
+  fi >&3
 }
 
 
 function cmdline__p__arguments__short_composed {
-  typeset argument=$1
-  typeset option remainder name arguments 
+  typeset options_description=$1
+  typeset short
+  typeset rest
+  typeset arguments
+  typeset shift
+  typeset flag
+  typeset i
+  typeset -a options
+  typeset -a flags
+  typeset -a last_option
+  typeset -A arguments_table
 
-  [[ $argument ]] || return 1
+  IFS=';' read -ra options <<< "$options_description"; shift
 
-  shift
+  for option in "${options[@]}"; do
+    IFS=':' read -r name short _ arguments <<< "$option"
+    arguments_table["$short"]=$arguments
+  done
 
-  {
-    typeset -p short_map || return 2
-    typeset -p arguments_map || return 2
-  } >/dev/null 2>&1
+  rest=$1; shift
 
-  option=${argument#-} option=${option::1}
-  remainder=${argument#-?}
-  name=${short_map["$option"]}
+  while [[ $rest ]]; do
+    short=${rest#-} rest=${short#?} short=${short%"$rest"}
 
-  [[ $name ]] || {
-    printf -- '- %s\0' "$argument" >&3
-    return 3
-  }
+    [[ ${arguments_table["$short"]+set} ]] || return 1
 
-  arguments=${arguments_map["$name"]}
+    arguments=${arguments_table["$short"]}
 
-  if ((arguments == 0)); then
-    printf '%s\0' "$name" >&3
-
-    if [[ $remainder ]]; then
-      cmdline__p__arguments__short_composed "-$remainder" "$@" || return
+    if ((arguments == 0)); then
+      flags+=("-$short")
+    elif ((arguments > 0)) && [[ $rest ]]; then
+      last_option=("-$short" "$rest" "$@") shift=$arguments
+      break
+    elif ((arguments > 0)); then
+      last_option=("-$short" "$@") shift=$((arguments + 1))
+      break
+    else
+      return 1
     fi
-  else
-    [[ $remainder ]] && set -- "$remainder" "$@"
+  done
 
-    cmdline__p__arguments__short "-$option" "$@" || return
+  if [[ $last_option ]]; then
+    printf %s $shift
+  else
+    printf %s 1
   fi
+
+  for flag in "${flags[@]}"; do
+    cmdline__p__arguments__short "$options_description" "$flag" \
+      >/dev/null
+  done
+
+  cmdline__p__arguments__short "$options_description" \
+    "${last_option[@]}" >/dev/null
 }
 
 
 function cmdline__p__arguments__long {
-  typeset argument=$1
-  typeset name i arguments
+  typeset long
+  typeset name
+  typeset arguments
+  typeset i
+  typeset -a options
+  typeset -A arguments_table
+  typeset -A name_table
 
-  [[ $argument ]] || return 1
+  IFS=';' read -ra options <<< "$1"; shift
+
+  for option in "${options[@]}"; do
+    IFS=':' read -r name _ long arguments <<< "$option"
+    arguments_table["$long"]=$arguments
+    name_table["$long"]=$name
+  done
+
+  [[ $1 = --[!-]* ]] || return 1
+
+  [[ ${arguments_table["${1#--}"]+set} ]] || return 1
+  [[ ${name_table["${1#--}"]+set} ]] || return 1
+
+  arguments=${arguments_table["${1#--}"]}
+  name=${name_table["${1#--}"]}
 
   shift
 
-  {
-    typeset -p long_map || return 2
-    typeset -p arguments_map || return 2
-  } >/dev/null 2>&1
+  ((arguments <= $#)) || return 1
 
-  name=${long_map["${argument#--}"]}
+  printf %s "$((arguments + 1))"
 
-  [[ $name ]] || {
-    printf -- '- %s\0' "$argument" >&3
-    return 3
-  }
-
-  arguments=${arguments_map["$name"]}
-
-  if ((arguments == 0)); then
-    printf '%s\0' "$name" >&3; return 0
-  elif ((arguments > $#)); then
-    return 4
-  fi
-  
-  for ((i = 1; i <= arguments; i++)); do
-    printf '%s %s\0' "$name" "${@:i:1}" >&3
-
-    shift
-  done
-
-  printf %s "$arguments"
+  if ((arguments > 0)); then
+    for ((i = 1; i <= arguments; i++)); do
+      printf '%s:%s\0' "$name" "${!i}"
+    done
+  else
+    printf '%s\0' "$name"
+  fi >&3
 }
 
 
-function cmdline__arguments {
-  : <<EOD
-  - name of argument
-  - long form
-  - short form
-  - is required?
-  - number of args
-  - help string
-  
-  name=help:long=help:short=h:required=:arguments=0:help=show this help
-  
-  cmdline__arguments 
+function cmdline__p__parse_descriptions {
+  typeset option_description
+  typeset option_object
+  typeset key
+  typeset value
+  typeset shift
+  typeset argument
+  typeset name
+  typeset short
+  typeset long
+  typeset -a option_descriptions
 
-  env vars:
-
-  - errors_not_fatal
-  - dashdash_not_special
-EOD
-
-
-  typeset option_description parameters key value shift argument
-  typeset long short required arguments stop_parsing return_code
-  typeset -a parameters
-  typeset -A long_map short_map required_map arguments_map
-
+  option_object='name;short;long;arguments;help'
 
   shift=0
 
@@ -148,33 +164,101 @@ EOD
 
     ((shift++))
 
-    IFS=: read -ra parameters <<< "$option_description"
-
-    name= long= short= required= arguments=0
-    for parameter in "${parameters[@]}"; do
-      IFS== read -r key value <<< "$parameter"
-
+    name= short= long= arguments=0
+    while IFS=: read -rd '' key value; do
       case $key in
-        name) name=$value;;
-        long) long=$value;;
-        short) short=$value;;
-        required) required=$value;;
-        arguments) arguments=$value;;
+        -*)
+          return 1
+          ;;
+
+        name|short|long|arguments)
+          typeset "$key=$value"
+          ;;
       esac
+    done < <(object__new "$option_object" "$option_description")
 
-      name=${name:-"$long"}
-      name=${name:-"$short"}
-
-      [[ $name ]] || return 1
-      
-      [[ $long ]]  && long_map["$long"]=$name
-      [[ $short ]] && short_map["$short"]=$name
-      required_map["$name"]=$required
-      arguments_map["$name"]=$arguments
-    done
+    option_descriptions+=("$name:$short:$long:$arguments")
   done
 
-  shift "$shift"
+  (IFS=';'; printf %s:%s "$shift" "${option_descriptions[*]}")
+}
+
+
+function cmdline__p__consume_arguments {
+  typeset options=$1; shift
+  typeset argument
+  typeset stop_parsing
+  typeset helper
+
+
+  while (($# > 0)); do
+    if [[ $stop_parsing ]]; then
+        printf '@:%s\0' "$1"; shift; continue;
+    fi
+
+    helper=
+    case $1 in
+      -[!-])
+        helper=cmdline__p__arguments__short
+        ;;
+
+      -[!-]*)
+        helper=cmdline__p__arguments__short_composed
+        ;;
+
+      --[!-]*)
+        if [[ $1 = --+([!=-])=* ]]; then
+          IFS='=' read -rd '' key value <<< "$1";
+          value=${value%$'\n'}
+          shift 1
+          set -- "$key" "$value" "$@"
+        fi
+
+        helper=cmdline__p__arguments__long
+        ;;
+
+      --)
+        stop_parsing=y
+        ;;
+
+      *)
+        printf '@:%s\0' "$1"
+        ;;
+    esac
+
+    if [[ $helper ]]; then
+      { shift=$("$helper" "$options" "$@") || return 1; } 3>&1
+
+      shift "$((shift))"
+    else
+      shift
+    fi
+  done
+}
+
+
+function cmdline__arguments {
+  : <<EOD
+  cmdline__arguments 
+
+  env vars:
+
+  - errors_not_fatal
+  - dashdash_not_special
+EOD
+
+  typeset key
+  typeset value
+  typeset shift
+  typeset argument
+  typeset options
+  typeset stop_parsing
+  typeset return_code
+
+  IFS=: read -rd '' shift options < \
+    <(cmdline__p__parse_descriptions "$@") || return
+
+  shift "${shift:-0}"
 
   if [[ $1 = '--' ]]; then
     shift
@@ -182,112 +266,10 @@ EOD
     return 2
   fi
 
-  while (($# > 0)); do
-    argument=$1
-
-    if [[ $stop_parsing ]]; then
-        printf '@ %s\0' "$argument"; shift; continue;
-    fi
-
-    case $argument in
-      -[!-])
-        {
-          shift=$(cmdline__p__arguments__short "$@") || {
-            return_code=$?
-
-            [[ $errors_not_fatal ]] || return "$return_code";
-          }
-        } 3>&1
-        
-        shift "$((shift + 1))"
-        ;;
-
-      -[!-]*)
-        {
-          shift=$(cmdline__p__arguments__short_composed "$@") || {
-            return_code=$?
-
-            [[ $errors_not_fatal ]] || return "$return_code";
-          }
-        } 3>&1
-
-        shift "$((shift + 1))"
-        ;;
-
-      --[!-]*)
-        if [[ $argument = --+([!=])=* ]]; then
-          IFS== read -rd '' key value <<< "$argument"
-
-          shift; set -- "$key" "${value%$'\n'}" "$@"
-        fi
-
-        {
-          shift=$(cmdline__p__arguments__long "$@") || {
-            return_code=$?
-
-            [[ $errors_not_fatal ]] || return "$return_code";
-          }
-        } 3>&1
-        
-        shift "$((shift + 1))"
-        ;;
-
-      --)
-        if [[ $dashdash_not_special ]]; then
-          printf '@ %s\0' "$argument";
-        else
-          stop_parsing=y
-        fi
-
-        shift
-        ;;
-
-      *)
-        printf '@ %s\0' "$argument"; shift;;
-    esac
-  done
+  cmdline__p__consume_arguments "$@"
 }
 
-: cmdline__usage
 
-: cmdline__help
 function cmdline__help {
-  typeset option_description name long short required arguments help
-  typeset key value parameter
-  typeset -a parameters
-
-  for option_description do
-    [[ $option_description = '--' ]] && break
-
-    IFS=: read -ra parameters <<< "$option_description"
-
-    name= long= short= required= arguments=0 help=
-    for parameter in "${parameters[@]}"; do
-      IFS== read -r key value <<< "$parameter"
-
-      case $key in
-        name) name=$value;;
-        long) long=$value;;
-        short) short=$value;;
-        required) required=$value;;
-        arguments) arguments=$value;;
-        help) help=$value;;
-      esac
-
-      name=${name:-"$long"}
-      name=${name:-"$short"}
-
-      [[ $name ]] || return 1
-    done
-
-    if [[ $short && $long ]]; then
-      printf '\t-%s, --%s\n\t\t%s\n' "$short" "$long" "$help"
-    elif [[ $short ]]; then
-      printf '\t-%s\n\t\t%s\n' "$short" "$help"
-    elif [[ $long ]]; then
-      printf '\t--%s\n\t\t%s\n' "$long" "$help"
-    else
-      :
-    fi
-  done
+  :
 }

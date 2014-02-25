@@ -9,18 +9,18 @@ function main {
   arguments even after arguments.
 EOD
 
-  typeset IFS separator no_trailing_newline interpret_backslashes
+  typeset separator no_trailing_newline interpret_backslashes
   typeset type value argument
   typeset -a options=(
-    'name=no_trailing_newline:short=n'
-    'name=interpret_backslashes:short=e'
-    'name=no_interpret_backslashes:short=E'
+    'name:no_trailing_newline;short:n'
+    'name:interpret_backslashes;short:e'
+    'name:no_interpret_backslashes;short:E'
   )
   typeset -a arguments
 
   errors_not_fatal=y dashdash_not_special=y \
     cmdline__arguments "${options[@]}" -- "$@" | {
-      while read -rd '' type value; do
+      while IFS=: read -rd '' type value; do
         case $type in 
           @|-)
             arguments+=("$separator$value"); separator=' '

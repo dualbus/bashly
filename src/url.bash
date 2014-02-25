@@ -4,15 +4,14 @@
 : load cmdline
 
 function main {
-  typeset IFS 
   typeset -a commands arguments
 
   typeset -a options=(
-  'name=encode:short=e:long=encode:arguments=1'
-  'name=decode:short=d:long=decode:arguments=1'
+  'name:encode;short:e;long:encode;arguments:1'
+  'name:decode;short:d;long:decode;arguments:1'
   )
 
-  while read -rd '' type value; do
+  while IFS=: read -rd '' type value; do
     case $type in
       @)
         echo bad "$value"; exit 1

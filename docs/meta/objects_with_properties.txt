@@ -1,0 +1,14 @@
+class A {
+  required property foo;
+  optional property bar;
+}
+
+
+class Person {
+  required property first_name;
+  required property last_name;
+}
+
+class:person;property:first_name;property:last_name
+
+property:value;

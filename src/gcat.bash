@@ -116,32 +116,32 @@ function main {
   I will not attempt to solve it)
 EOD
 
-  typeset IFS type value file line line_number
+  typeset type value file line line_number
   typeset opt_number_nonblank opt_show_ends opt_number
   typeset opt_squeeze_blank opt_show_tabs opt_show_nonprinting
   typeset -a files
   typeset version='gcat 0.9'
   typeset -a options=(
-  'name=show_all:short=A:long=show-all:help=equivalent to -vET'
-  'name=number_nonblank:short=b:long=number-nonblank:help=number '\
+  'name:show_all;short:A;long:show-all;help:equivalent to -vET'
+  'name:number_nonblank;short:b;long:number-nonblank;help:number '\
 'nonempty output lines, overrides -n'
-  'name=show_nonprinting_ends:short=e:help=equivalent to -vE'
-  'name=show_ends:short=E:long=show-ends:help=display $ at end '\
+  'name:show_nonprinting_ends;short:e;help:equivalent to -vE'
+  'name:show_ends;short:E;long:show-ends;help:display $ at end '\
 'of each line'
-  'name=number:short=n:long=number:help=number all output lines'
-  'name=squeeze_blank:short=s:long=squeeze-blank:help=suppress '\
+  'name:number;short:n;long:number;help:number all output lines'
+  'name:squeeze_blank;short:s;long:squeeze-blank;help:suppress '\
 'repeated empty output lines'
-  'name=show_nonprinting_tabs:short=t:help=equivalent to -vT'
-  'name=show_tabs:short=T:long=show-tabs:help=display TAB '\
+  'name:show_nonprinting_tabs;short:t;help:equivalent to -vT'
+  'name:show_tabs;short:T;long:show-tabs;help:display TAB '\
 'characters as ^I'
-  'name=unknown:short=u:help=(ignored)'
-  'name=show_nonprinting:short=v:long=show-nonprinting:help=use ^ '\
+  'name:unknown;short:u;help:(ignored)'
+  'name:show_nonprinting;short:v;long:show-nonprinting;help:use ^ '\
 'and M- notation, except for LFD and TAB'
-  'name=help:long=help:help=display this help and exit'
-  'name=version:long=version:help=output version information and exit'
+  'name:help;long:help;help:display this help and exit'
+  'name:version;long:version;help:output version information and exit'
   )
 
-  while read -rd '' type value; do
+  while IFS=: read -rd '' type value; do
     case $type in
       @)
         if [[ $value = - ]]; then

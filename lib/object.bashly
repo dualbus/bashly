@@ -1,0 +1,33 @@
+#!/bin/bash
+
+function object__new {
+  typeset class_description=$1 input_properties=$2
+  typeset field
+  typeset name
+  typeset value
+  typeset class
+  typeset -a fields
+  typeset -A properties
+  
+
+  IFS=';' read -ra fields <<< "$class_description"
+
+  for field in "${fields[@]}"; do
+    [[ $field ]] || return 1
+
+    properties["$field"]=y
+  done
+
+  IFS=';' read -ra fields <<< "$input_properties"
+  for field in "${fields[@]}"; do
+    IFS=':' read -rd '' name value <<< "$field"; value=${value%$'\n'}
+
+    [[ "${properties["$name"]+set}" ]] || {
+      printf -- '-%s:%s\0' "$name" "$value"
+
+      return 2
+    }
+
+    printf '%s:%s\0' "$name" "$value"
+  done
+}

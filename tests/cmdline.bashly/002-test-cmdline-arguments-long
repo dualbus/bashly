@@ -1,0 +1,21 @@
+#!/bin/bash
+
+: load cmdline
+
+function r {
+  "$@" 3>&1 | od -t x1 -An -v | tr -d '[:space:]'
+
+  return "${PIPESTATUS[0]}"
+}
+
+function test {
+  [[ $(r cmdline__p__arguments__long 'x:x:x:1' --x a) = "$(r printf '2x:a\0')" ]] || return 1
+  [[ $(r cmdline__p__arguments__long 'x:x:x:0' --x  ) = "$(r printf '1x\0')"   ]] || return 1
+
+  r cmdline__p__arguments__long 'x:x:x:1' --y >/dev/null && return 1
+  r cmdline__p__arguments__long 'x:x:x:1' --x >/dev/null && return 1
+
+  return 0
+}
+
+test
