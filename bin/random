@@ -352,7 +352,7 @@ main ()
     typeset type_ value;
     typeset type length source;
     typeset -a options=('name=type:short=t:long=type:arguments=1' 'name=length:short=n:long=length:arguments=1' 'name=source:short=s:long=source:arguments=1' 'name=help:short=h:long=help');
-    type=hex length=8 source=/dev/urandom;
+    type=xdigit length=8 source=/dev/urandom;
     while read -rd '' type_ value; do
         case $type_ in 
             type)
@@ -365,16 +365,14 @@ main ()
                 source=$value
             ;;
             help)
-                cmdline__help "${options[@]}"
+                cmdline__help "${options[@]}";
+                return 0
             ;;
             *)
                 common__die "unexpected ''$value''"
             ;;
         esac;
     done < <(cmdline__arguments "${options[@]}" -- "$@");
-    log__debug "type: $type";
-    log__debug "length: $length";
-    log__debug "source: $source";
     case $type in 
         xdigit | alnum | alpha | digit)
             printf '%s\n' "$(tr -cd "[:$type:]" < "$source" | head -c "$length")"
