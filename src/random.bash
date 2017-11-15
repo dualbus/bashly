@@ -15,20 +15,16 @@ function main {
   )
 
   # defaults
-  type=hex length=8 source=/dev/urandom
+  type=xdigit length=8 source=/dev/urandom
   while read -rd '' type_ value; do
     case $type_ in
       type) type=$value;;
       length) length=$value;;
       source) source=$value;;
-      help) cmdline__help "${options[@]}";;
+      help) cmdline__help "${options[@]}"; return 0;;
       *) common__die "unexpected ''$value''";;
     esac
   done < <(cmdline__arguments "${options[@]}" -- "$@")
-
-  log__debug "type: $type"
-  log__debug "length: $length"
-  log__debug "source: $source"
 
   case $type in
     xdigit|alnum|alpha|digit) 
