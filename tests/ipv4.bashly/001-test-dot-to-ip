@@ -1,0 +1,12 @@
+#!/bin/bash
+
+: load ipv4
+
+function test {
+  (( $(ipv4__dot_to_ip '8.8.8.8') == 134744072 )) || return 1
+
+  return 0
+}
+
+
+test
